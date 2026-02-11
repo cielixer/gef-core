@@ -37,6 +37,7 @@ target_include_directories(gef
 )
 
 add_subdirectory(src)
+add_subdirectory(modules)
 
 enable_testing()
 add_subdirectory(tests)
