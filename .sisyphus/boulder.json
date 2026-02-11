@@ -1,9 +1,19 @@
 {
-  "active_plan": "/Volumes/media/Workspace/dev/gef/.sisyphus/plans/gef-mvp-implementation.md",
-  "started_at": "2026-02-11T13:47:00.000Z",
-  "session_ids": [
-    "ses_3b82a2a47ffe0eqgWKuzjVt5qW"
-  ],
-  "plan_name": "gef-mvp-implementation",
-  "agent": "atlas"
+  "active_plan": null,
+  "completed_plans": [
+    {
+      "path": ".sisyphus/plans/gef-mvp-implementation.md",
+      "completed_at": "2025-02-11T14:11:00.000Z",
+      "tasks_completed": 9,
+      "commits": [
+        "e0e4c46",
+        "2db9d79",
+        "0faeaf5",
+        "debc5bd",
+        "7a0a597",
+        "47082f5",
+        "b61c871"
+      ]
+    }
+  ]
 }
