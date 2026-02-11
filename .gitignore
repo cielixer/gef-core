@@ -43,12 +43,14 @@
 # Build directories
 build/
 cmake-build-*/
+.task/
 
 # Pixi environment
 .pixi/
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
@@ -58,9 +60,11 @@ cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
+compile_commands.json
 Makefile
 
 # Module artifacts
 *.pcm
 *.ifc
 *.gcm
+.sisyphus/
