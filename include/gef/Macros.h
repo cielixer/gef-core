@@ -23,6 +23,6 @@
         .num_bindings = gef__num_bindings,                                                         \
     };                                                                                             \
     extern "C" const gef_metadata_t* gef_get_metadata(void) { return &gef__metadata; }             \
-    extern "C" void gef_execute(gef::Context& ctx)
+    extern "C" void gef_execute(gef::Context& ctx);
 
 #endif
