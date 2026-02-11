@@ -1,0 +1,77 @@
+# GEF — General Engine Framework
+# https://taskfile.dev
+#
+# Usage:
+#   task install   — Set up environment and configure build
+#   task build     — Build libgef and all modules
+#   task test      — Run the test suite
+#   task rebuild   — Clean build artifacts and rebuild from scratch
+#   task format    — Format all C++ source files
+#   task clean     — Remove build artifacts and environment
+#   task update    — Update all dependencies
+#   task activate  — Enter the development shell
+#
+# First time? Just run:
+#   task install && task build && task test
+
+version: "3"
+
+vars:
+  BUILD_DIR: build
+  BUILD_TYPE: Release
+  GENERATOR: Ninja
+  SRC_DIRS: include src modules tests
+
+tasks:
+  install:
+    desc: Set up pixi environment and configure CMake (ready to build)
+    cmds:
+      - pixi install
+      - pixi run cmake -B {{.BUILD_DIR}} -G {{.GENERATOR}} -DCMAKE_BUILD_TYPE={{.BUILD_TYPE}}
+    status:
+      - test -f {{.BUILD_DIR}}/CMakeCache.txt
+
+  build:
+    desc: Build libgef and all modules
+    deps: [install]
+    cmds:
+      - pixi run cmake --build {{.BUILD_DIR}} --parallel
+
+  test:
+    desc: Run the test suite
+    deps: [build]
+    cmds:
+      - pixi run ctest --test-dir {{.BUILD_DIR}} --output-on-failure
+
+  rebuild:
+    desc: Clean build artifacts and rebuild from scratch
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
+      - task: install
+      - task: build
+
+  format:
+    desc: Format all C++ source files with clang-format
+    cmds:
+      - |
+        pixi run find {{.SRC_DIRS}} -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
+          -exec clang-format -i {} +
+      - echo "Formatted all C++ files."
+
+  clean:
+    desc: Remove build artifacts and pixi environment
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
+      - pixi clean
+
+  update:
+    desc: Update all dependencies managed by pixi
+    cmds:
+      - pixi update
+      - pixi run cmake -B {{.BUILD_DIR}} -G {{.GENERATOR}} -DCMAKE_BUILD_TYPE={{.BUILD_TYPE}}
+
+  activate:
+    desc: Enter the development shell
+    interactive: true
+    cmds:
+      - pixi shell
