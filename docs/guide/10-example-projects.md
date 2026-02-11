@@ -76,7 +76,7 @@ modules:
 The `ImageThreshold` module demonstrates the use of `Input` and `Output` bindings to produce new data without modifying the source.
 
 ```cpp
-GEF_STAGE(ImageThreshold) {
+GEF_MODULE(ImageThreshold) {
   GEF_INPUT(Image, input);
   GEF_OUTPUT(Image, output);
   GEF_CONFIG(int, threshold);
@@ -147,7 +147,7 @@ modules:
 The `FrameProcessor` accesses a persistent frame counter stored in the Unmanaged pool via an `InOut` binding. This allows the module to track its position in the stream even though the Batch module executes frames in parallel.
 
 ```cpp
-GEF_STAGE(FrameProcessor) {
+GEF_MODULE(FrameProcessor) {
   GEF_INPUT(Image, input_frame);
   GEF_OUTPUT(Image, output_frame);
   GEF_INOUT(int, global_frame_count);
@@ -239,7 +239,7 @@ modules:
 The `Aggregator` module uses multiple `Input` bindings to merge data from parallel branches of the Flow.
 
 ```cpp
-GEF_STAGE(Aggregation) {
+GEF_MODULE(Aggregation) {
   GEF_INPUT(Tensor, feat);
   GEF_INPUT(Tensor, anom);
   GEF_OUTPUT(Report, result);

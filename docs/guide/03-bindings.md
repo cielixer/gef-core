@@ -41,7 +41,7 @@ Configs are settings like `threshold_value`, `kernel_size`, or `model_path`. The
 To see how these look together, here is a module that utilizes all four binding kinds to perform a complex normalization:
 
 ```cpp
-GEF_STAGE(Normalizer) {
+GEF_MODULE(Normalizer) {
     // 1. Dataflow Bindings
     GEF_INPUT(Tensor, source);      // Read-only input
     GEF_OUTPUT(Tensor, result);     // New resource produced
@@ -65,7 +65,7 @@ If you try to do this, the GEF validation layer will stop you with a **BUILD ERR
 
 ```cpp
 // ❌ THIS WILL CAUSE A BUILD ERROR
-GEF_STAGE(InvalidModule) {
+GEF_MODULE(InvalidModule) {
     GEF_INPUT(Tensor, buffer);
     GEF_OUTPUT(Tensor, buffer); // Error: "buffer" used as both Input and Output
     
@@ -150,7 +150,7 @@ Let's build upon the Blur pipeline from Chapter 2. We want to add a `Threshold` 
 ```cpp
 #include <gef/gef.hpp>
 
-GEF_STAGE(ImageThreshold) {
+GEF_MODULE(ImageThreshold) {
     // We modify the image in-place to save memory
     GEF_INOUT(Tensor, image);
     

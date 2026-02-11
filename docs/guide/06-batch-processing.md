@@ -39,7 +39,7 @@ Let's look at a simple Atomic module that performs a grayscale conversion on a s
 #include <gef.hpp>
 
 // A simple grayscale converter designed for a single image
-GEF_STAGE(GrayscaleFilter) {
+GEF_MODULE(GrayscaleFilter) {
     GEF_INPUT(Image, input_frame);
     GEF_OUTPUT(Image, output_frame);
 

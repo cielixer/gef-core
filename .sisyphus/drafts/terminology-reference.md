@@ -102,7 +102,7 @@ Authoritative field names used in module configuration files (Rounds 5, 6).
 Macro-based declaration system for Atomic modules (Round 5).
 
 ### Module Declaration
-- **`GEF_STAGE`** — Declares an Atomic module. Usage: `GEF_STAGE(ModuleName) { ... }`
+- **`GEF_MODULE`** — Declares an Atomic module. Usage: `GEF_MODULE(ModuleName) { ... }`
 
 ### Binding Macros
 - **`GEF_INPUT(Type, name)`** — Declare an Input binding.
@@ -112,7 +112,7 @@ Macro-based declaration system for Atomic modules (Round 5).
 
 ### Example
 ```cpp
-GEF_STAGE(BlurFilter) {
+GEF_MODULE(BlurFilter) {
   GEF_INPUT(Image, input_image);
   GEF_OUTPUT(Image, blurred_image);
   GEF_CONFIG(int, kernel_size);

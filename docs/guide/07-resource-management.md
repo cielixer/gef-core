@@ -63,7 +63,7 @@ You might have noticed that you never deal with raw pointers (e.g., `float*`) in
 These are opaque handles that manage the borrow for you. They behave like references but ensure that you cannot accidentally hold onto a pointer after a module has finished or perform unsafe pointer arithmetic.
 
 ```cpp
-GEF_STAGE(BrightnessAdjust) {
+GEF_MODULE(BrightnessAdjust) {
     GEF_INPUT(Image, input_image);
     GEF_INOUT(Image, target_image);
     GEF_CONFIG(float, factor);

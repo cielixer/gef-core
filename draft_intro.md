@@ -1,23 +1,23 @@
 # What is GEF?
 
-Welcome to the General Engine Framework (GEF) tutorial. Whether you are a researcher developing new algorithms for image analysis, physical simulations, or complex data processing, or an engineer building the next generation of high-performance engines or performance-critical applications, GEF provides the foundation for modular, high-performance computation.
+Welcome to the General Engine Framework (GEF) tutorial. Whether you are a researcher developing new algorithms for image analysis or an engineer building the next generation of real-time video processing systems, GEF provides the foundation for modular, high-performance computation.
 
-GEF is a modern C++ framework designed to simplify the development of complex, data-driven applications. It focuses on modularity, clear data ownership, and high-performance execution. By separating the logic of individual computation units from the way they are composed and executed, GEF allows you to build scalable systems that are both easy to reason about and incredibly fast.
+GEF is a C++23 framework designed to simplify the development of complex, data-driven applications. It focuses on modularity, clear data ownership, and high-performance execution. By separating the logic of individual computation units from the way they are composed and executed, GEF allows you to build scalable systems that are both easy to reason about and incredibly fast.
 
 > **Design Status Disclaimer**
 > GEF is currently in the design phase. Code examples in this tutorial show the intended API surface. The framework is not yet implemented.
 
 ## The Problem GEF Solves
 
-In modern research and engineering, we often find ourselves caught between two extremes. On one hand, we have monolithic applications that are difficult to modify and slow to build. These "spaghetti-code" engines or frameworks often bury core algorithmic logic under layers of infrastructure, making it nearly impossible for a researcher to experiment with a single part of the pipeline without triggering a cascade of recompilation and side effects.
+In modern research and engineering, we often find ourselves caught between two extremes. On one hand, we have monolithic applications that are difficult to modify and slow to build. These "spaghetti-code" engines often bury core algorithmic logic under layers of infrastructure, making it nearly impossible for a researcher to experiment with a single part of the pipeline without triggering a cascade of recompilation and side effects.
 
 On the other hand, we have flexible scripting environments and high-level frameworks that provide great developer experience (DX) but lack the raw performance, deterministic memory management, and safety required for production systems.
 
-GEF bridges this gap. It provides a "researcher-first" developer experience where you can modify a single algorithm, rebuild just that module, and see the results immediately. It achieves this by using a plugin-based architecture and a declarative data-flow model, all while maintaining the performance of C++ and the safety of a strongly-typed framework.
+GEF bridges this gap. It provides a "researcher-first" developer experience where you can modify a single algorithm, rebuild just that module, and see the results immediately. It achieves this by using a plugin-based architecture and a declarative data-flow model, all while maintaining the performance of C++23 and the safety of a strongly-typed framework.
 
 ## Architecture at a Glance
 
-GEF organizes computation into a hierarchy of modules managed by a central System. Below is a high-level overview of how these components fit together:
+GEF organizes computation into a hierarchy of modules managed by a central System. Below is a high-level view of how these components fit together:
 
 ```
 System (the program)
@@ -38,7 +38,7 @@ At the core of GEF is the **System**, which owns the resources and orchestrates 
 GEF is built on a set of core principles that guide every design decision. Understanding these will help you make the most of the framework.
 
 ### Explicit Control over Implicit Magic
-We believe that code should be easy to reason about. In GEF, data dependencies are never hidden behind hidden global data or implicit side effects. Every module explicitly declares its interface:
+We believe that code should be easy to reason about. In GEF, data dependencies are never hidden behind global variables or implicit side effects. Every module explicitly declares its interface:
 - **Input**: Data that the module reads but cannot modify.
 - **Output**: New data that the module produces.
 - **InOut**: Data that the module modifies in-place for maximum efficiency.
@@ -53,7 +53,7 @@ Modern hardware is parallel by nature, but writing thread-safe code is notorious
 Memory management is a common source of bugs in high-performance C++. GEF centralizes memory management in **ResourcePools**. Resources have a clear lifecycle:
 - **Managed ResourcePool**: Uses automatic reference-counting for transient data flowing within an execution.
 - **Unmanaged ResourcePool**: Gives the System full control over persistent data that must survive across multiple runs.
-This model ensures that you never have to worry about manual memory management or unexpected memory leaks.
+This model ensures that you never have to worry about manual `delete` calls or unexpected memory leaks.
 
 ### Researcher-Friendly DX
 Iteration speed is everything in algorithm development. GEF uses a plugin-based architecture where each **Atomic Module** is defined in its own `.cpp` file and compiled into a shared library (`.so` or `.dylib`). When you change an algorithm, you only rebuild that one module. The system hot-reloads the change, allowing you to iterate on complex pipelines in seconds. No more waiting for the entire project to relink.
@@ -63,7 +63,7 @@ GEF is designed for high-throughput data processing. By embracing Data-Oriented 
 
 ## Two Personas
 
-GEF is designed to support a collaborative flow between two primary roles:
+GEF is designed to support a collaborative workflow between two primary roles:
 
 ### The Researcher
 The Researcher is the primary author of algorithms. They spend most of their time writing **Atomic Modules** in C++ and composing them into larger structures using YAML configuration files. They focus on mathematical correctness, iteration speed, and ease of experimentation. GEF empowers them to run their code immediately without worrying about the underlying "plumbing" of the system.

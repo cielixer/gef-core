@@ -23,7 +23,7 @@ The foundation of GEF is its data management layer. Phase 1 focuses on the CPU-b
 ### Phase 2: Module System
 With resource management in place, the framework introduces the plugin-based module architecture.
 - Development of the Atomic module loading system.
-- Creation of the macro framework (`GEF_STAGE`) for researcher-friendly module declaration.
+- Creation of the macro framework (`GEF_MODULE`) for researcher-friendly module declaration.
 - Implementation of the `Context` API for module-engine interaction.
 - Support for dynamic loading of shared libraries (.so/.dylib).
 

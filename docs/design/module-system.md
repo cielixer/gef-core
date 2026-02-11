@@ -34,7 +34,7 @@ The framework discovers these modules by scanning designated plugin directories.
 ### Declaration Interface
 Atomic modules are declared using a set of C++ macros that handle the registration and metadata generation required by the framework. These macros create the necessary glue code to bridge the researcher's logic with the engine's internal task runner.
 
--   `GEF_STAGE(Name)`: Defines the entry point for the module. Note that while the macro uses "STAGE" for historical compatibility and registration reasons, the component is strictly referred to in all documentation and system logic as an Atomic Module.
+-   `GEF_MODULE(Name)`: Defines the entry point for the module, registering it with the engine as an Atomic Module.
 -   `GEF_INPUT(Type, name)`: Declares a read-only input. This informs the scheduler that the module requires this data to be ready before it can start.
 -   `GEF_OUTPUT(Type, name)`: Declares a newly produced output. The framework ensures a fresh resource is allocated for this binding.
 -   `GEF_INOUT(Type, name)`: Declares an in-place mutation of existing data. This is a high-performance binding that requires exclusive access to the resource.
@@ -46,7 +46,7 @@ The primary responsibility of the researcher is to implement the `execute(Contex
 These proxy types are a critical design feature: they prevent accidental copies of large data structures (like 4K video frames) when researchers use the `auto` keyword. The proxy behaves like a reference but is managed by the framework to ensure safety and instrumentation.
 
 ```cpp
-GEF_STAGE(GrayscaleFilter) {
+GEF_MODULE(GrayscaleFilter) {
     GEF_INPUT(Image, input_image);
     GEF_OUTPUT(Image, gray_image);
     GEF_CONFIG(bool, use_high_precision);

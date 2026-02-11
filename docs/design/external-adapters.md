@@ -52,7 +52,7 @@ Eigen provides the `Eigen::Map` class, which allows the library to treat a raw p
 
 ### Conceptual C++ Usage
 ```cpp
-GEF_STAGE(LinearSolver) {
+GEF_MODULE(LinearSolver) {
     GEF_INPUT(Tensor<float, 2>, matrix_a);
     GEF_INPUT(Tensor<float, 1>, vector_b);
     GEF_OUTPUT(Tensor<float, 1>, solution_x);

@@ -57,8 +57,8 @@ Create a file named `modules/grayscale.cpp`:
 ```cpp
 #include <gef/gef.hpp>
 
-// 1. Declare the module using the GEF_STAGE macro
-GEF_STAGE(GrayscaleModule) {
+// 1. Declare the module using the GEF_MODULE macro
+GEF_MODULE(GrayscaleModule) {
     // 2. Define the interface bindings
     GEF_INPUT(Tensor, input_image);    // Read-only input image
     GEF_OUTPUT(Tensor, output_image);  // New output image we will produce
@@ -86,7 +86,7 @@ GEF_STAGE(GrayscaleModule) {
 ```
 
 ### Breaking it Down
-*   **`GEF_STAGE`**: This macro registers your class as a GEF module.
+*   **`GEF_MODULE`**: This macro registers your class as a GEF module.
 *   **`GEF_INPUT` / `GEF_OUTPUT`**: These declare your data dependencies. GEF uses explicit **Input** (read-only) and **Output** (new data) bindings to ensure data safety and clarity.
 *   **`execute(Context& ctx)`**: This is the heart of the module. The `Context` provides safe access to the data you declared in your bindings.
 

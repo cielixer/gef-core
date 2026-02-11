@@ -28,7 +28,7 @@ A module cannot use the same name for an `Input` and an `Output`. GEF requires y
 
 **The Broken Code:**
 ```cpp
-GEF_STAGE(BrightnessFilter) {
+GEF_MODULE(BrightnessFilter) {
     GEF_INPUT(Image, frame);  // Read-only
     GEF_OUTPUT(Image, frame); // ERROR: Same name as input!
     
@@ -39,7 +39,7 @@ GEF_STAGE(BrightnessFilter) {
 **The Fix:**
 Rename the output to something unique, or use `InOut` if you intend to modify the image in-place.
 ```cpp
-GEF_STAGE(BrightnessFilter) {
+GEF_MODULE(BrightnessFilter) {
     GEF_INPUT(Image, frame);
     GEF_OUTPUT(Image, brightened_frame); // Fixed: Unique name
 }

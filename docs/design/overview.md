@@ -172,7 +172,7 @@ See [validation-layer.md](validation-layer.md) for the complete error catalogue.
 | **Config** | Immutable, engine-lifetime setting injected into a module |
 | **Context** | Object passed to `execute()`; provides `input<T>()`, `output<T>()`, `inout<T>()`, `config<T>()` |
 | **Flow** | DAG of modules with automatic parallelism |
-| **GEF_STAGE** | Macro that declares an Atomic module |
+| **GEF_MODULE** | Macro that declares an Atomic module |
 | **InOut** | Binding for in-place mutation with exclusive access |
 | **Input** | Read-only binding; safe for concurrent access |
 | **Managed pool** | Reference-counted ResourcePool for transient data |

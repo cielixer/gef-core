@@ -60,7 +60,7 @@ In this example, we create a module that takes an input tensor and performs a si
 #include <gef/adapters/eigen.hpp>
 
 // A module that scales a matrix using Eigen
-GEF_STAGE(MatrixScaler) {
+GEF_MODULE(MatrixScaler) {
     GEF_INPUT(Tensor<float, 2>, input_matrix);
     GEF_OUTPUT(Tensor<float, 2>, output_matrix);
     GEF_CONFIG(float, scale_factor);
@@ -87,7 +87,7 @@ Because GEF `Image` types are often compatible with Eigen's memory model, you ca
 #include <gef/adapters/eigen.hpp>
 
 // Applying a 3x3 color transformation matrix to an image
-GEF_STAGE(ColorTransformer) {
+GEF_MODULE(ColorTransformer) {
     GEF_INPUT(Image, input_image);       // 3-channel RGB image
     GEF_OUTPUT(Image, output_image);
     GEF_CONFIG(Tensor<float, 2>, transform_matrix); // 3x3 matrix

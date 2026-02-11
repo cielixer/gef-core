@@ -34,11 +34,11 @@ The engine calls this function immediately after loading the library but before 
 
 ## What Macros Generate
 
-Researchers define modules using high-level macros like `GEF_STAGE`. These macros are not just syntactic sugar; they generate the boilerplate required for the query function pattern.
+Researchers define modules using high-level macros like `GEF_MODULE`. These macros are not just syntactic sugar; they generate the boilerplate required for the query function pattern.
 
 ### User Code (Before Expansion)
 ```cpp
-GEF_STAGE(GrayscaleFilter) {
+GEF_MODULE(GrayscaleFilter) {
     GEF_INPUT(Image, input_image);
     GEF_OUTPUT(Image, gray_image);
     GEF_CONFIG(float, threshold);

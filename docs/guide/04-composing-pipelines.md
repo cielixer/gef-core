@@ -41,7 +41,7 @@ modules:
 *   **`inputs:`**: A list of data items this pipeline expects to receive from the outside world.
 *   **`outputs:`**: A list of data items this pipeline will produce when it finishes.
 *   **`configs:`**: A set of parameters that are shared with all modules inside the pipeline.
-*   **`modules:`**: An ordered list of the modules that make up the pipeline. These can be Atomic modules (referenced by their `GEF_STAGE` name) or even other Pipelines defined elsewhere.
+*   **`modules:`**: An ordered list of the modules that make up the pipeline. These can be Atomic modules (referenced by their `GEF_MODULE` name) or even other Pipelines defined elsewhere.
 
 ## 3. Implicit Wiring and Variable List Semantics
 
@@ -144,7 +144,7 @@ First, our `ImageThreshold` module (building on Chapter 3):
 ```cpp
 #include <gef/gef.hpp>
 
-GEF_STAGE(ImageThreshold) {
+GEF_MODULE(ImageThreshold) {
     GEF_INOUT(Tensor, image);
     GEF_CONFIG(float, level);
 
@@ -164,7 +164,7 @@ And a simple `EdgeDetect` module:
 ```cpp
 #include <gef/gef.hpp>
 
-GEF_STAGE(EdgeDetect) {
+GEF_MODULE(EdgeDetect) {
     GEF_INPUT(Tensor, img);
     GEF_OUTPUT(Tensor, edges);
 

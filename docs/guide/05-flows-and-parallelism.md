@@ -159,7 +159,7 @@ First, a simple C++ module that combines two processed images.
 ```cpp
 #include <gef/gef.hpp>
 
-GEF_STAGE(ImageCompositor) {
+GEF_MODULE(ImageCompositor) {
     GEF_INPUT(Tensor, layer_a);
     GEF_INPUT(Tensor, layer_b);
     GEF_OUTPUT(Tensor, combined);

@@ -23,7 +23,7 @@ Every Atomic Module follows this general template:
 ```cpp
 #include <gef/gef.hpp>
 
-GEF_STAGE(MyAwesomeModule) {
+GEF_MODULE(MyAwesomeModule) {
     // 1. Declare bindings
     GEF_INPUT(Tensor, input_image);
     GEF_OUTPUT(Tensor, processed_image);
@@ -39,7 +39,7 @@ GEF_STAGE(MyAwesomeModule) {
 
 Let's break down each macro:
 
-### `GEF_STAGE(ModuleName)`
+### `GEF_MODULE(ModuleName)`
 This macro identifies the class as a GEF module. Under the hood, it handles the registration of your module with the engine's internal registry. Note that we don't use a string for the name here; the macro uses the identifier you provide to generate the necessary metadata.
 
 ### `GEF_INPUT(Type, name)`
@@ -97,7 +97,7 @@ With `InputRef<T>`, the `auto` keyword is perfectly safe. The proxy behaves like
 
 You might wonder how the GEF engine knows what bindings your module requires just by looking at a compiled shared library.
 
-When you use the `GEF_STAGE` and binding macros, the C++ preprocessor generates a hidden `extern "C"` function in your `.so` file named `gef_get_metadata()`. This function, when called by the engine, returns a structured manifest containing:
+When you use the `GEF_MODULE` and binding macros, the C++ preprocessor generates a hidden `extern "C"` function in your `.so` file named `gef_get_metadata()`. This function, when called by the engine, returns a structured manifest containing:
 1.  The module's name.
 2.  A list of all bindings (Inputs, Outputs, InOuts, Configs).
 3.  The expected types for each binding.
@@ -113,7 +113,7 @@ Let's look at a practical example: a Gaussian Blur module. This module takes an 
 #include <cmath>
 #include <algorithm>
 
-GEF_STAGE(GaussianBlur) {
+GEF_MODULE(GaussianBlur) {
     // 1. Interface Declaration
     GEF_INPUT(Tensor, input_image);
     GEF_OUTPUT(Tensor, blurred_image);
