@@ -1,5 +1,3 @@
 #include <gef/Context.h>
 
-namespace gef {
-
-}
+namespace gef {}

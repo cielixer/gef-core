@@ -4,22 +4,14 @@
 #include <gef/Common.h>
 #include <gef/Context.h>
 
-namespace gef {
-
-class AtomicModule {
-public:
-    virtual ~AtomicModule() = default;
-    
-    virtual void execute(Context& ctx) = 0;
-};
-
-}
+typedef void (*gef_execute_fn)(gef::Context& ctx);
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 extern const gef_metadata_t* gef_get_metadata(void);
+extern void gef_execute(gef::Context& ctx);
 
 #ifdef __cplusplus
 }

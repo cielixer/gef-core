@@ -4,15 +4,15 @@
 namespace gef {
 
 class PluginLoader {
-public:
+  public:
     PluginLoader();
     ~PluginLoader();
-    
+
     void* load(const char* path);
     void* getSymbol(void* handle, const char* symbol);
     void unload(void* handle);
 };
 
-}
+} // namespace gef
 
 #endif
