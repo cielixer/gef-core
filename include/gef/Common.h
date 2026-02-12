@@ -2,7 +2,6 @@
 #define GEF_COMMON_H_
 
 #include <cstddef>
-#include <cstdint>
 #include <cstring>
 
 #ifdef __cplusplus
