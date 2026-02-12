@@ -8,8 +8,10 @@ void execute(gef::Context& ctx) {
     sum = a + b;
 }
 
+// clang-format off
 GEF_MODULE("example_add", "0.1.0", execute,
     GEF_INPUT(int, "a"),
     GEF_INPUT(int, "b"),
     GEF_OUTPUT(int, "sum")
 )
+// clang-format on

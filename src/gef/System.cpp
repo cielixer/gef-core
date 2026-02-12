@@ -26,8 +26,7 @@ void System::loadModule(const char* path) {
         throw std::runtime_error("Failed to retrieve module metadata");
     }
 
-    auto execute =
-        reinterpret_cast<gef_execute_fn>(loader_->getSymbol(handle, "gef_execute"));
+    auto execute = reinterpret_cast<gef_execute_fn>(loader_->getSymbol(handle, "gef_execute"));
 
     registry_->registerModule(metadata, execute);
 }

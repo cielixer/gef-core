@@ -13,8 +13,7 @@ namespace fs = std::filesystem;
 static std::string getModulePath() {
     // Try different possible paths: absolute, relative to build dir, or relative to project
     fs::path candidates[] = {
-        fs::path(std::getenv("CMAKE_BINARY_DIR") ? std::getenv("CMAKE_BINARY_DIR")
-                                                              : "") /
+        fs::path(std::getenv("CMAKE_BINARY_DIR") ? std::getenv("CMAKE_BINARY_DIR") : "") /
             "modules" / "libexample_add.so",
         "/Volumes/media/Workspace/dev/gef/build/modules/libexample_add.so",
         "modules/libexample_add.so",
@@ -72,8 +71,7 @@ TEST_CASE("Plugin system can execute example_add module via dlsym", "[plugin][ex
         reinterpret_cast<const gef_metadata_t* (*)()>(loader.getSymbol(handle, "gef_get_metadata"));
     REQUIRE(get_metadata != nullptr);
 
-    auto execute =
-        reinterpret_cast<gef_execute_fn>(loader.getSymbol(handle, "gef_execute"));
+    auto execute = reinterpret_cast<gef_execute_fn>(loader.getSymbol(handle, "gef_execute"));
     REQUIRE(execute != nullptr);
 
     gef::Context ctx;
