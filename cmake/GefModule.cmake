@@ -1,22 +1,23 @@
 # GEF Module CMake Helper
 # Provides add_gef_module() function for building GEF modules
+#
+# Works in both build tree (include() from root CMakeLists.txt)
+# and install tree (find_package(gef) from downstream projects).
 
 function(add_gef_module NAME SOURCE)
     # Create MODULE library (shared library for dlopen)
     add_library(${NAME} MODULE ${SOURCE})
-    
-    # Link against core GEF library
-    target_link_libraries(${NAME} PRIVATE gef)
-    
-    # Include GEF headers
-    target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
-    
+
+    # Link against gef::gef — works in both build tree (ALIAS) and install tree (exported)
+    # Include directories are carried transitively by the target
+    target_link_libraries(${NAME} PRIVATE gef::gef)
+
     # Set output directory for modules
     set_target_properties(${NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
-    
+
     # Enable Position Independent Code for all platforms
     set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    
+
     # Platform-specific settings
     if(APPLE)
         # macOS: use .so extension for consistency with dlopen across platforms
