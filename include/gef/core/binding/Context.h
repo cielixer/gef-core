@@ -12,23 +12,23 @@ class Context {
     Context()          = default;
     virtual ~Context() = default;
 
-    template <typename T> const T& input(const char* name) {
+    template <typename T> [[nodiscard]] const T& input(const char* name) {
         return *std::any_cast<T*>(bindings_[name]);
     }
 
-    template <typename T> T& output(const char* name) {
+    template <typename T> [[nodiscard]] T& output(const char* name) {
         return *std::any_cast<T*>(bindings_[name]);
     }
 
-    template <typename T> T& inout(const char* name) {
+    template <typename T> [[nodiscard]] T& inout(const char* name) {
         return *std::any_cast<T*>(bindings_[name]);
     }
 
-    template <typename T> const T& config(const char* name) {
+    template <typename T> [[nodiscard]] const T& config(const char* name) {
         return *std::any_cast<T*>(bindings_[name]);
     }
 
-    std::any& get_binding(const std::string& name) {
+    [[nodiscard]] std::any& get_binding(const std::string& name) {
         return bindings_[name];
     }
 

@@ -9,8 +9,10 @@ function(add_gef_module NAME SOURCE)
     add_library(${NAME} MODULE ${SOURCE})
 
     # Link against gef::gef — works in both build tree (ALIAS) and install tree (exported)
-    # Include directories are carried transitively by the target
     target_link_libraries(${NAME} PRIVATE gef::gef)
+
+    # Inject module name as compile definition so GEF_MODULE macro can use it
+    target_compile_definitions(${NAME} PRIVATE GEF_MODULE_NAME="${NAME}")
 
     # Set output directory for modules
     set_target_properties(${NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/modules)

@@ -5,7 +5,7 @@ void execute(gef::Context& ctx) {
     auto& rhs   = ctx.input<int>("rhs");
     auto& result = ctx.output<int>("result");
 
-    result = lhs + rhs;
+    result = lhs - rhs;
 }
 
 // clang-format off

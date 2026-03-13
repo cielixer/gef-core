@@ -8,6 +8,7 @@ ninja = "*"
 cxx-compiler = ">=1.9.0,<2"
 catch2 = "*"
 clang-format = "*"
+spdlog = "*"
 
 [tasks]
 configure = "cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release"

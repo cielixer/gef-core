@@ -1,12 +1,8 @@
-// test_main.cpp - Basic tests
-#include <gef/Context.h>
-#include <gef/PluginLoader.h>
-#include <gef/Registry.h>
+#include <gef/app.h>
 #include <iostream>
 
 int main() {
-    gef::PluginLoader loader;
-    gef::Registry registry;
+    gef::ModuleRegistry module_registry;
     gef::Context ctx;
 
     std::cout << "Basic component instantiation test passed!" << std::endl;

@@ -23,6 +23,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 add_library(gef SHARED)
 add_library(gef::gef ALIAS gef)
 
+find_package(spdlog REQUIRED)
+
 set_target_properties(gef PROPERTIES
     CXX_VISIBILITY_PRESET default
     VISIBILITY_INLINES_HIDDEN OFF
@@ -39,6 +41,8 @@ target_include_directories(gef
   PRIVATE
     src
 )
+
+target_link_libraries(gef PUBLIC spdlog::spdlog)
 
 add_subdirectory(src)
 add_subdirectory(modules)

@@ -1,8 +1,8 @@
 #ifndef GEF_MODULE_H_
 #define GEF_MODULE_H_
 
-#include <gef/Common.h>
-#include <gef/Context.h>
+#include <gef/core/binding/Common.h>
+#include <gef/core/binding/Context.h>
 
 typedef void (*gef_execute_fn)(gef::Context& ctx);
 
