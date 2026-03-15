@@ -13,6 +13,7 @@ enum class ErrorCode {
     SymbolNotFound,
     MetadataInvalid,
     ModuleNotFound,
+    InvalidTopology,
 };
 
 /// Lightweight, copyable error type for use with std::expected.

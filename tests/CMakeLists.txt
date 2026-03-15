@@ -40,6 +40,21 @@ target_link_libraries(test_flow
 
 add_test(NAME flow_tests COMMAND test_flow)
 
+add_executable(test_composite_module test_composite_module.cpp)
+
+target_include_directories(test_composite_module
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(test_composite_module
+    PRIVATE
+        gef
+        Catch2::Catch2WithMain
+)
+
+add_test(NAME composite_module_tests COMMAND test_composite_module)
+
 add_library(test_facade_module OBJECT test_facade_module.cpp)
 
 target_include_directories(test_facade_module

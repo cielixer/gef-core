@@ -5,32 +5,32 @@
 
 namespace gef {
 
-Flow::Flow(const ModuleRegistry& registry) noexcept
-    : registry_(registry) {}
+Flow::Flow(const ModuleStore& store) noexcept
+    : store_(store) {}
 
 void Flow::addModule(const std::string& instanceName,
                      const std::string& moduleName) {
-    if (instances_.contains(instanceName)) [[unlikely]] {
+    if (this->instances_.contains(instanceName)) [[unlikely]] {
         throw std::runtime_error("Duplicate instance name: " + instanceName);
     }
 
-    auto id = registry_.find(moduleName);
+    auto id = findModule(this->store_, moduleName);
     if (!id) [[unlikely]] {
         throw std::runtime_error("Unknown module: " + moduleName);
     }
 
-    instances_[instanceName] = moduleName;
+    this->instances_[instanceName] = moduleName;
 }
 
 void Flow::execute(Context& ctx) {
     std::vector<std::pair<std::string, std::string>> dag_edges;
     std::set<std::string> all_instances;
     
-    for (const auto& [instance_name, _] : instances_) {
+    for (const auto& [instance_name, _] : this->instances_) {
         all_instances.insert(instance_name);
     }
     
-    for (const auto& edge : edges_) {
+    for (const auto& edge : this->edges_) {
         auto [from_instance, from_binding] = parseEndpoint(edge.from);
         auto [to_instance, to_binding] = parseEndpoint(edge.to);
         
@@ -46,16 +46,16 @@ void Flow::execute(Context& ctx) {
         execution_order = Scheduler::topologicalSort(instance_vec, dag_edges);
     }
     
-    for (const auto& edge : edges_) {
+    for (const auto& edge : this->edges_) {
         if (edge.allocate) {
-            edge.allocate(data_store_);
+            edge.allocate(this->data_store_);
         }
     }
     
     for (const std::string& instance_name : execution_order) {
         Context local_ctx;
         
-        for (const auto& edge : edges_) {
+        for (const auto& edge : this->edges_) {
             auto [from_instance, from_binding] = parseEndpoint(edge.from);
             auto [to_instance, to_binding] = parseEndpoint(edge.to);
             
@@ -64,53 +64,52 @@ void Flow::execute(Context& ctx) {
                     local_ctx.set_binding(to_binding, ctx.get_binding(from_binding));
                 } else if (from_instance != "outputs") {
                     if (edge.bind) {
-                        edge.bind(data_store_, local_ctx, to_binding);
+                        edge.bind(this->data_store_, local_ctx, to_binding);
                     }
                 }
             }
         }
         
-        for (const auto& edge : edges_) {
+        for (const auto& edge : this->edges_) {
             auto [from_instance, from_binding] = parseEndpoint(edge.from);
             auto [to_instance, to_binding] = parseEndpoint(edge.to);
             
             if (from_instance == instance_name) {
                 if (to_instance != "inputs" && to_instance != "outputs") {
                     if (edge.bind) {
-                        edge.bind(data_store_, local_ctx, from_binding);
+                        edge.bind(this->data_store_, local_ctx, from_binding);
                     }
                 } else if (to_instance == "outputs") {
                     if (edge.bind) {
-                        edge.bind(data_store_, local_ctx, from_binding);
+                        edge.bind(this->data_store_, local_ctx, from_binding);
                     }
                 }
             }
         }
         
-        for (const auto& config_binder : config_binders_) {
+        for (const auto& config_binder : this->config_binders_) {
             config_binder(local_ctx);
         }
         
-        auto id = registry_.find(instances_[instance_name]);
+        auto id = findModule(this->store_, this->instances_[instance_name]);
         if (!id) [[unlikely]] {
-            throw std::runtime_error("Module not found: " + instances_[instance_name]);
+            throw std::runtime_error("Module not found: " + this->instances_[instance_name]);
         }
 
-        auto def = registry_.get(*id);
+        auto def = getModule(this->store_, *id);
         if (!def) [[unlikely]] {
             throw std::runtime_error("Module def not found for id: " + std::to_string(*id));
         }
 
         std::visit(overloaded{
             [&](const AtomicModule& a) { a.execute(local_ctx); },
-            [&](const FlowModule&) {},
-            [&](const PipelineModule&) {},
+            [&](const CompositeModule&) {},
         }, (*def)->variant);
     }
     
-    for (const auto& edge : edges_) {
+    for (const auto& edge : this->edges_) {
         if (edge.copy_to_external) {
-            edge.copy_to_external(data_store_, ctx);
+            edge.copy_to_external(this->data_store_, ctx);
         }
     }
 }
@@ -133,7 +132,7 @@ void Flow::validateEndpoint(const std::string& endpoint, const char* label) {
     auto instance = endpoint.substr(0, dot_pos);
 
     if (instance != "inputs" && instance != "outputs") {
-        if (!instances_.contains(instance)) [[unlikely]] {
+        if (!this->instances_.contains(instance)) [[unlikely]] {
             throw std::runtime_error("Unknown instance in " + std::string(label) +
                                      " endpoint: " + instance);
         }

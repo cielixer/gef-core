@@ -8,20 +8,17 @@ auto System::loadModule(const std::filesystem::path& path)
     -> std::expected<ModuleId, Error> {
     spdlog::debug("Loading module from: {}", path.string());
 
-    auto name = loadAtomicModule(module_registry_, path);
-    if (!name) [[unlikely]] {
-        return std::unexpected(std::move(name.error()));
-    }
-
-    auto atomic = getAtomicModule(module_registry_, *name);
+    auto atomic = loadAtomicModule(path);
     if (!atomic) [[unlikely]] {
         return std::unexpected(std::move(atomic.error()));
     }
 
+    std::string name{atomic->metadata->module_name};
+
     ModuleSignature sig;
-    sig.version = (*atomic)->metadata->version;
-    for (std::size_t i = 0; i < (*atomic)->metadata->num_bindings; ++i) {
-        const auto& b = (*atomic)->metadata->bindings[i];
+    sig.version = atomic->metadata->version;
+    for (std::size_t i = 0; i < atomic->metadata->num_bindings; ++i) {
+        const auto& b = atomic->metadata->bindings[i];
         sig.bindings.push_back(Binding{
             b.name,
             static_cast<BindingRole>(b.role),
@@ -29,35 +26,21 @@ auto System::loadModule(const std::filesystem::path& path)
         });
     }
 
-    auto existing_id = module_registry_.find(*name);
-    if (existing_id) {
-        auto existing_def = module_registry_.get(*existing_id);
-        if (!existing_def) [[unlikely]] {
-            return std::unexpected(std::move(existing_def.error()));
-        }
-
-        (*existing_def)->signature = std::move(sig);
-        (*existing_def)->variant = AtomicModule{(*atomic)->handle,
-                                                (*atomic)->metadata,
-                                                (*atomic)->execute};
-
-        spdlog::info("Reloaded module '{}' with id {}", *name, *existing_id);
-        return *existing_id;
-    }
-
-    if (existing_id.error().code != ErrorCode::ModuleNotFound) [[unlikely]] {
-        return std::unexpected(std::move(existing_id.error()));
-    }
+    auto module_name = name;
 
     ModuleDef def{
-        .name      = *name,
+        .name      = std::move(name),
         .signature = std::move(sig),
-        .variant   = AtomicModule{(*atomic)->handle, (*atomic)->metadata, (*atomic)->execute},
+        .variant   = std::move(*atomic),
     };
 
-    auto id = module_registry_.add(std::move(def));
-    spdlog::info("Registered module '{}' with id {}", *name, id);
-    return id;
+    try {
+        auto id = registerModule(this->module_store_, std::move(def));
+        spdlog::info("Registered module '{}' with id {}", module_name, id);
+        return id;
+    } catch (const std::invalid_argument& e) {
+        return std::unexpected(Error{ErrorCode::LoadFailed, e.what()});
+    }
 }
 
 auto System::executeModule(std::string_view name, Context& ctx)
@@ -66,7 +49,7 @@ auto System::executeModule(std::string_view name, Context& ctx)
         throw std::invalid_argument("Module name cannot be empty");
     }
 
-    auto id = module_registry_.find(name);
+    auto id = findModule(this->module_store_, name);
     if (!id) [[unlikely]] {
         return std::unexpected(std::move(id.error()));
     }
@@ -76,26 +59,25 @@ auto System::executeModule(std::string_view name, Context& ctx)
 
 auto System::executeModule(ModuleId id, Context& ctx)
     -> std::expected<void, Error> {
-    auto def = module_registry_.get(id);
+    auto def = getModule(this->module_store_, id);
     if (!def) [[unlikely]] {
         return std::unexpected(std::move(def.error()));
     }
 
     std::visit(overloaded{
         [&](const AtomicModule& a) { a.execute(ctx); },
-        [&](const FlowModule&) {},
-        [&](const PipelineModule&) {},
+        [&](const CompositeModule&) {},
     }, (*def)->variant);
 
     return {};
 }
 
-auto System::moduleRegistry() const noexcept -> const ModuleRegistry& {
-    return module_registry_;
+auto System::moduleStore() const noexcept -> const ModuleStore& {
+    return this->module_store_;
 }
 
-auto System::moduleRegistry() noexcept -> ModuleRegistry& {
-    return module_registry_;
+auto System::moduleStore() noexcept -> ModuleStore& {
+    return this->module_store_;
 }
 
 } // namespace gef

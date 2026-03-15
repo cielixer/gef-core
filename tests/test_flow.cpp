@@ -100,7 +100,7 @@ TEST_CASE("Flow addModule accepts valid module name", "[flow][addModule]") {
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     
     REQUIRE_NOTHROW(flow.addModule("adder1", "example_add"));
 }
@@ -110,7 +110,7 @@ TEST_CASE("Flow addModule rejects duplicate instance name", "[flow][addModule][e
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder1", "example_add");
     
     REQUIRE_THROWS_AS(
@@ -121,7 +121,7 @@ TEST_CASE("Flow addModule rejects duplicate instance name", "[flow][addModule][e
 
 TEST_CASE("Flow addModule rejects unknown module type", "[flow][addModule][error]") {
     gef::System system;
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     
     REQUIRE_THROWS_AS(
         flow.addModule("unknown_inst", "nonexistent_module"),
@@ -134,7 +134,7 @@ TEST_CASE("Flow connect accepts valid endpoints", "[flow][connect]") {
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder1", "example_add");
     
     REQUIRE_NOTHROW(flow.connect<int>("inputs.lhs", "adder1.lhs"));
@@ -146,7 +146,7 @@ TEST_CASE("Flow connect rejects unknown instance in from endpoint", "[flow][conn
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder1", "example_add");
     
     REQUIRE_THROWS_AS(
@@ -160,7 +160,7 @@ TEST_CASE("Flow connect rejects unknown instance in to endpoint", "[flow][connec
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder1", "example_add");
     
     REQUIRE_THROWS_AS(
@@ -174,7 +174,7 @@ TEST_CASE("Flow connect rejects malformed from endpoint", "[flow][connect][error
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder1", "example_add");
 
     REQUIRE_THROWS_AS(
@@ -188,7 +188,7 @@ TEST_CASE("Flow connect rejects malformed to endpoint", "[flow][connect][error]"
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder1", "example_add");
 
     REQUIRE_THROWS_AS(
@@ -203,7 +203,7 @@ TEST_CASE("Flow executes linear chain with two adders", "[flow][execute][integra
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
     
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder1", "example_add");
     flow.addModule("adder2", "example_add");
     flow.connect<int>("inputs.lhs", "adder1.lhs");
@@ -229,7 +229,7 @@ TEST_CASE("Flow boundary inputs/outputs work correctly", "[flow][execute][bounda
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
     
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder", "example_add");
     flow.connect<int>("inputs.a", "adder.lhs");
     flow.connect<int>("inputs.b", "adder.rhs");
@@ -251,7 +251,7 @@ TEST_CASE("Flow detects cycles and throws", "[flow][execute][error]") {
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
     
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder1", "example_add");
     flow.addModule("adder2", "example_add");
     flow.connect<int>("adder1.result", "adder2.lhs");
@@ -270,7 +270,7 @@ TEST_CASE("Flow config injection works", "[flow][execute][config]") {
     auto module_path = getModulePath("example_add");
     system.loadModule(module_path).value();
     
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("adder", "example_add");
     flow.connect<int>("inputs.a", "adder.lhs");
     flow.connect<int>("inputs.b", "adder.rhs");
@@ -294,7 +294,7 @@ TEST_CASE("Flow executes diamond DAG correctly", "[flow][execute][integration]")
     gef::System system;
     system.loadModule(getModulePath("example_add")).value();
     
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("left", "example_add");
     flow.addModule("right", "example_add");
     flow.addModule("merger", "example_add");
@@ -324,7 +324,7 @@ TEST_CASE("Flow handles multi-output modules", "[flow][execute][integration]") {
     system.loadModule(getModulePath("example_divide")).value();
     system.loadModule(getModulePath("example_add")).value();
     
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("divider", "example_divide");
     flow.addModule("adder", "example_add");
     
@@ -349,7 +349,7 @@ TEST_CASE("Flow chains multiple instances of same module", "[flow][execute][inte
     gef::System system;
     system.loadModule(getModulePath("example_add")).value();
     
-    gef::Flow flow(system.moduleRegistry());
+    gef::Flow flow(system.moduleStore());
     flow.addModule("step1", "example_add");
     flow.addModule("step2", "example_add");
     flow.addModule("step3", "example_add");

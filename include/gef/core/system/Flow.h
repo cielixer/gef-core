@@ -2,8 +2,8 @@
 #define GEF_FLOW_H_
 
 #include <gef/core/binding/Context.h>
-#include <gef/core/module/ModuleRegistry.h>
-#include <gef/core/module/ModuleVariant.h>
+#include <gef/core/module/ModuleStore.h>
+#include <gef/core/module/Module.h>
 #include <any>
 #include <functional>
 #include <map>
@@ -14,7 +14,7 @@ namespace gef {
 
 class Flow {
   public:
-    explicit Flow(const ModuleRegistry& registry) noexcept;
+    explicit Flow(const ModuleStore& store) noexcept;
 
     void addModule(const std::string& instanceName, const std::string& moduleName);
     void execute(Context& ctx);
@@ -49,14 +49,14 @@ class Flow {
             }
         };
 
-        edges_.push_back(std::move(edge));
+        this->edges_.push_back(std::move(edge));
     }
 
     template <typename T>
     void setConfig(const std::string& key, T value) {
-        config_[key] = std::move(value);
-        config_binders_.push_back([key, this](Context& ctx) {
-            ctx.set_binding(key, std::any(&std::any_cast<T&>(config_[key])));
+        this->config_[key] = std::move(value);
+        this->config_binders_.push_back([key, this](Context& ctx) {
+            ctx.set_binding(key, std::any(&std::any_cast<T&>(this->config_[key])));
         });
     }
 
@@ -75,7 +75,7 @@ class Flow {
 
     [[nodiscard]] std::pair<std::string, std::string> parseEndpoint(const std::string& endpoint);
 
-    const ModuleRegistry& registry_;
+    const ModuleStore& store_;
     std::map<std::string, std::string> instances_;
     std::map<std::string, std::any> config_;
     std::vector<std::function<void(Context&)>> config_binders_;
