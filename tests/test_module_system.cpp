@@ -387,7 +387,35 @@ TEST_CASE("System handles concurrent module loading safely", "[system][thread]")
      }
      
      REQUIRE(loaded_ids.size() == 2);
-     REQUIRE(loaded_ids[0] == loaded_ids[1]);
-     REQUIRE(system.moduleRegistry().size() == 1);
-     REQUIRE(gef::atomicModuleNames(system.moduleRegistry()).size() == 1);
+      REQUIRE(loaded_ids[0] == loaded_ids[1]);
+      REQUIRE(system.moduleRegistry().size() == 1);
+      REQUIRE(gef::atomicModuleNames(system.moduleRegistry()).size() == 1);
+}
+
+TEST_CASE("AtomicModule remains move-only and placeholder-safe", "[module][traits]") {
+    // Verify move-constructible
+    REQUIRE(std::is_move_constructible_v<gef::AtomicModule>);
+    
+    // Verify non-copyable
+    REQUIRE(!std::is_copy_constructible_v<gef::AtomicModule>);
+    REQUIRE(!std::is_copy_assignable_v<gef::AtomicModule>);
+    
+    // Verify move-assignable
+    REQUIRE(std::is_move_assignable_v<gef::AtomicModule>);
+    
+    // Verify default-constructible (for placeholder usage)
+    REQUIRE(std::is_default_constructible_v<gef::AtomicModule>);
+    
+    // Runtime: default construction and safe destruction
+    {
+        gef::AtomicModule empty_instance;
+        // Safe no-op destruction at scope end
+    }
+    
+    // Runtime: move construction and destruction
+    {
+        gef::AtomicModule instance1 = gef::createAtomicModule(nullptr, nullptr, nullptr);
+        gef::AtomicModule instance2 = std::move(instance1);
+        // Both destructors should complete safely
+    }
 }
