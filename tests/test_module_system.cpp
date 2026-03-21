@@ -134,7 +134,7 @@ TEST_CASE("System hot-reloads existing module without duplicate registration", "
 TEST_CASE("System handles missing modules gracefully", "[module][error]") {
     gef::System system;
 
-    auto result = system.loadModule("nonexistent_module.so");
+    auto result = system.loadModule(getModulePath("nonexistent"));
     REQUIRE_FALSE(result.has_value());
     REQUIRE(result.error().code == gef::ErrorCode::FileNotFound);
 }

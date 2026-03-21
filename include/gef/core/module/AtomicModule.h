@@ -27,6 +27,8 @@ struct AtomicModule {
     AtomicModule(const AtomicModule&) = delete;
     auto operator=(const AtomicModule&) -> AtomicModule& = delete;
 
+    auto _internalSetState(std::unique_ptr<AtomicModuleState> state) -> void;
+
 private:
     std::unique_ptr<AtomicModuleState> state_;
 
@@ -34,9 +36,6 @@ private:
     friend void executeAtomicModule(const AtomicModule& module, Context& ctx);
     friend auto createAtomicModule(void* handle, const gef_metadata_t* metadata,
                                     gef_execute_fn_t execute) -> AtomicModule;
-    friend auto createAtomicModuleWithLibrary(boost::dll::shared_library library,
-                                               const gef_metadata_t* metadata,
-                                               gef_execute_fn_t execute) -> AtomicModule;
     friend auto cloneAtomicModuleNonOwning(const AtomicModule& module) -> AtomicModule;
 };
 

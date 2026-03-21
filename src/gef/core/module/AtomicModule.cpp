@@ -14,6 +14,10 @@ struct AtomicModuleState {
     bool                       owns_handle = false;
 };
 
+auto createAtomicModuleWithLibrary(boost::dll::shared_library library,
+                                    const gef_metadata_t* metadata,
+                                    gef_execute_fn_t execute) -> AtomicModule;
+
 AtomicModule::AtomicModule() : state_(std::make_unique<AtomicModuleState>()) {}
 
 AtomicModule::~AtomicModule() {
@@ -27,6 +31,10 @@ AtomicModule::~AtomicModule() {
 AtomicModule::AtomicModule(AtomicModule&& other) noexcept = default;
 
 auto AtomicModule::operator=(AtomicModule&& other) noexcept -> AtomicModule& = default;
+
+auto AtomicModule::_internalSetState(std::unique_ptr<AtomicModuleState> state) -> void {
+    state_ = std::move(state);
+}
 
 
 
@@ -54,11 +62,12 @@ auto createAtomicModuleWithLibrary(boost::dll::shared_library library,
                                     const gef_metadata_t* metadata,
                                     gef_execute_fn_t execute) -> AtomicModule {
     AtomicModule module;
-    module.state_ = std::make_unique<AtomicModuleState>();
-    module.state_->library = std::move(library);
-    module.state_->metadata = metadata;
-    module.state_->execute = execute;
-    module.state_->owns_handle = true;
+    auto state = std::make_unique<AtomicModuleState>();
+    state->library = std::move(library);
+    state->metadata = metadata;
+    state->execute = execute;
+    state->owns_handle = true;
+    module._internalSetState(std::move(state));
     return module;
 }
 
