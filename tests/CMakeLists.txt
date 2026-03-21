@@ -10,6 +10,8 @@ target_include_directories(test_module_system
 target_compile_definitions(test_module_system
     PRIVATE
         GEF_MODULE_DIR="${CMAKE_BINARY_DIR}/modules"
+        GEF_MODULE_PREFIX="${CMAKE_SHARED_MODULE_PREFIX}"
+        GEF_MODULE_SUFFIX="${CMAKE_SHARED_MODULE_SUFFIX}"
 )
 
 target_link_libraries(test_module_system
@@ -30,6 +32,8 @@ target_include_directories(test_flow
 target_compile_definitions(test_flow
     PRIVATE
         GEF_MODULE_DIR="${CMAKE_BINARY_DIR}/modules"
+        GEF_MODULE_PREFIX="${CMAKE_SHARED_MODULE_PREFIX}"
+        GEF_MODULE_SUFFIX="${CMAKE_SHARED_MODULE_SUFFIX}"
 )
 
 target_link_libraries(test_flow

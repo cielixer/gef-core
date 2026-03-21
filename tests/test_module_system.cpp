@@ -4,12 +4,9 @@
 #include <gef/app.h>
 #include <gef/core/module/ModuleVariant.h>
 #include <stdexcept>
+#include "TestModulePath.h"
 
 namespace fs = std::filesystem;
-
-static fs::path getModulePath(const std::string& name) {
-    return fs::path(GEF_MODULE_DIR) / ("lib" + name + ".so");
-}
 
 static gef::ModuleDef makeAtomicModuleDef(std::string name,
                                           std::string version = "0.1.0") {
@@ -328,4 +325,10 @@ TEST_CASE("Context throws bad_any_cast for missing or mismatched bindings", "[co
     float value = 3.5f;
     ctx.set_binding("number", std::any(&value));
     REQUIRE_THROWS_AS(ctx.input<int>("number"), std::bad_any_cast);
+}
+
+TEST_CASE("Module path helper resolves existing built module", "[module][path]") {
+    auto path = getModulePath("example_add");
+    REQUIRE(fs::exists(path));
+    REQUIRE(fs::is_regular_file(path));
 }

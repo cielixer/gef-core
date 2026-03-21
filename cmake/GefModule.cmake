@@ -19,14 +19,4 @@ function(add_gef_module NAME SOURCE)
 
     # Enable Position Independent Code for all platforms
     set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-    # Platform-specific settings
-    if(APPLE)
-        # macOS: use .so extension for consistency with dlopen across platforms
-        set_target_properties(${NAME} PROPERTIES SUFFIX ".so")
-    elseif(WIN32)
-        # Windows: .dll is default for MODULE, no additional settings needed
-    else()
-        # Linux/Unix: .so is default for MODULE, no additional settings needed
-    endif()
 endfunction()

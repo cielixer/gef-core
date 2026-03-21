@@ -2,12 +2,9 @@
 #include <filesystem>
 #include <gef/app.h>
 #include <gef/core/scheduler/Scheduler.h>
+#include "TestModulePath.h"
 
 namespace fs = std::filesystem;
-
-static fs::path getModulePath(const std::string& name) {
-    return fs::path(GEF_MODULE_DIR) / ("lib" + name + ".so");
-}
 
 TEST_CASE("Scheduler handles linear chain A->B->C", "[flow][scheduler]") {
     std::vector<std::string> nodes = {"A", "B", "C"};
