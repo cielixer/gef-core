@@ -2,23 +2,25 @@
 
 #include "gef/core/binding/Context.h"
 
-#include <dlfcn.h>
+#include <boost/dll/shared_library.hpp>
 #include <utility>
 
 namespace gef {
 
 struct AtomicModuleState {
-    void*                 handle      = nullptr;
-    const gef_metadata_t* metadata    = nullptr;
-    gef_execute_fn_t      execute     = nullptr;
-    bool                  owns_handle = false;
+    boost::dll::shared_library library;
+    const gef_metadata_t*      metadata    = nullptr;
+    gef_execute_fn_t           execute     = nullptr;
+    bool                       owns_handle = false;
 };
 
 AtomicModule::AtomicModule() : state_(std::make_unique<AtomicModuleState>()) {}
 
 AtomicModule::~AtomicModule() {
-    if (state_ && state_->owns_handle && state_->handle) {
-        dlclose(state_->handle);
+    // Boost.DLL handles library unloading via RAII
+    // Only unload if we own the handle
+    if (state_ && state_->owns_handle && state_->library.is_loaded()) {
+        state_->library.unload();
     }
 }
 
@@ -38,11 +40,22 @@ void executeAtomicModule(const AtomicModule& module, Context& ctx) {
     }
 }
 
-auto createAtomicModule(void* handle, const gef_metadata_t* metadata,
+auto createAtomicModule(void* /*handle*/, const gef_metadata_t* metadata,
                         gef_execute_fn_t execute) -> AtomicModule {
     AtomicModule module;
     module.state_ = std::make_unique<AtomicModuleState>();
-    module.state_->handle = handle;
+    module.state_->metadata = metadata;
+    module.state_->execute = execute;
+    module.state_->owns_handle = true;
+    return module;
+}
+
+auto createAtomicModuleWithLibrary(boost::dll::shared_library library,
+                                    const gef_metadata_t* metadata,
+                                    gef_execute_fn_t execute) -> AtomicModule {
+    AtomicModule module;
+    module.state_ = std::make_unique<AtomicModuleState>();
+    module.state_->library = std::move(library);
     module.state_->metadata = metadata;
     module.state_->execute = execute;
     module.state_->owns_handle = true;
@@ -55,7 +68,6 @@ auto cloneAtomicModuleNonOwning(const AtomicModule& module) -> AtomicModule {
     }
     AtomicModule clone;
     clone.state_ = std::make_unique<AtomicModuleState>();
-    clone.state_->handle = module.state_->handle;
     clone.state_->metadata = module.state_->metadata;
     clone.state_->execute = module.state_->execute;
     clone.state_->owns_handle = false;

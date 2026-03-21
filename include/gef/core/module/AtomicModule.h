@@ -5,6 +5,10 @@
 
 #include <memory>
 
+namespace boost::dll {
+class shared_library;
+}
+
 namespace gef {
 
 class Context;
@@ -30,6 +34,9 @@ private:
     friend void executeAtomicModule(const AtomicModule& module, Context& ctx);
     friend auto createAtomicModule(void* handle, const gef_metadata_t* metadata,
                                     gef_execute_fn_t execute) -> AtomicModule;
+    friend auto createAtomicModuleWithLibrary(boost::dll::shared_library library,
+                                               const gef_metadata_t* metadata,
+                                               gef_execute_fn_t execute) -> AtomicModule;
     friend auto cloneAtomicModuleNonOwning(const AtomicModule& module) -> AtomicModule;
 };
 

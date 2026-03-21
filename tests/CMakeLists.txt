@@ -44,6 +44,27 @@ target_link_libraries(test_flow
 
 add_test(NAME flow_tests COMMAND test_flow)
 
+add_library(missing_metadata MODULE fixtures/modules/missing_metadata.cpp)
+target_link_libraries(missing_metadata PRIVATE gef)
+set_target_properties(missing_metadata PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"
+    POSITION_INDEPENDENT_CODE ON
+)
+
+add_library(missing_execute MODULE fixtures/modules/missing_execute.cpp)
+target_link_libraries(missing_execute PRIVATE gef)
+set_target_properties(missing_execute PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"
+    POSITION_INDEPENDENT_CODE ON
+)
+
+add_library(null_metadata MODULE fixtures/modules/null_metadata.cpp)
+target_link_libraries(null_metadata PRIVATE gef)
+set_target_properties(null_metadata PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"
+    POSITION_INDEPENDENT_CODE ON
+)
+
 add_library(test_facade_module OBJECT test_facade_module.cpp)
 
 target_include_directories(test_facade_module

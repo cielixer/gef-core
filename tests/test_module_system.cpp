@@ -333,3 +333,30 @@ TEST_CASE("Module path helper resolves existing built module", "[module][path]")
     REQUIRE(fs::exists(path));
     REQUIRE(fs::is_regular_file(path));
 }
+
+TEST_CASE("LoadAtomicModule detects missing gef_get_metadata", "[module][error][symbol]") {
+    gef::ModuleRegistry registry;
+    auto path = getModulePath("missing_metadata");
+    
+    auto result = gef::loadAtomicModule(registry, path);
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::SymbolNotFound);
+}
+
+TEST_CASE("LoadAtomicModule detects missing gef_execute", "[module][error][symbol]") {
+    gef::ModuleRegistry registry;
+    auto path = getModulePath("missing_execute");
+    
+    auto result = gef::loadAtomicModule(registry, path);
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::SymbolNotFound);
+}
+
+TEST_CASE("LoadAtomicModule detects null metadata", "[module][error][metadata]") {
+    gef::ModuleRegistry registry;
+    auto path = getModulePath("null_metadata");
+    
+    auto result = gef::loadAtomicModule(registry, path);
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::MetadataInvalid);
+}

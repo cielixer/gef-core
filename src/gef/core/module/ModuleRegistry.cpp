@@ -2,11 +2,16 @@
 
 #include "gef/core/module/AtomicModule.h"
 
-#include <dlfcn.h>
+#include <boost/dll/shared_library.hpp>
+#include <boost/system/system_error.hpp>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 
 namespace gef {
+
+auto createAtomicModuleWithLibrary(boost::dll::shared_library library,
+                                    const gef_metadata_t* metadata,
+                                    gef_execute_fn_t execute) -> AtomicModule;
 
 namespace {
 
@@ -96,18 +101,21 @@ auto loadAtomicModule(ModuleRegistry& registry, const std::filesystem::path& pat
 
     std::string norm_path = normalizePath(path);
 
-    void* handle = dlopen(norm_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
-    if (!handle) [[unlikely]] {
+    boost::dll::shared_library library;
+    try {
+        library.load(norm_path, boost::dll::load_mode::rtld_lazy | boost::dll::load_mode::rtld_local);
+    } catch (const boost::system::system_error& e) {
         return std::unexpected(Error{
             ErrorCode::FileNotFound,
-            std::string("Failed to dlopen: ") + dlerror(),
+            "Failed to load library: " + std::string(e.what()),
         });
     }
 
     using GetMetadataFn = const gef_metadata_t* (*)();
-    auto get_metadata   = reinterpret_cast<GetMetadataFn>(dlsym(handle, "gef_get_metadata"));
-    if (!get_metadata) [[unlikely]] {
-        dlclose(handle);
+    GetMetadataFn get_metadata = nullptr;
+    try {
+        get_metadata = library.get<const gef_metadata_t*()>("gef_get_metadata");
+    } catch (const boost::system::system_error&) {
         return std::unexpected(Error{
             ErrorCode::SymbolNotFound,
             "Symbol 'gef_get_metadata' not found",
@@ -116,7 +124,6 @@ auto loadAtomicModule(ModuleRegistry& registry, const std::filesystem::path& pat
 
     const gef_metadata_t* metadata = get_metadata();
     if (!metadata || !metadata->module_name) [[unlikely]] {
-        dlclose(handle);
         return std::unexpected(Error{
             ErrorCode::MetadataInvalid,
             "Module metadata or module_name is null",
@@ -124,9 +131,10 @@ auto loadAtomicModule(ModuleRegistry& registry, const std::filesystem::path& pat
     }
 
     using ExecuteFn = void (*)(Context&);
-    auto execute    = reinterpret_cast<ExecuteFn>(dlsym(handle, "gef_execute"));
-    if (!execute) [[unlikely]] {
-        dlclose(handle);
+    ExecuteFn execute = nullptr;
+    try {
+        execute = library.get<void(Context&)>("gef_execute");
+    } catch (const boost::system::system_error&) {
         return std::unexpected(Error{
             ErrorCode::SymbolNotFound,
             "Symbol 'gef_execute' not found",
@@ -158,7 +166,7 @@ auto loadAtomicModule(ModuleRegistry& registry, const std::filesystem::path& pat
     }
 
     registry.atomic_modules_.insert_or_assign(
-        name, createAtomicModule(handle, metadata, execute));
+        name, createAtomicModuleWithLibrary(std::move(library), metadata, execute));
     registry.atomic_name_to_path_[name]      = norm_path;
     registry.atomic_path_to_name_[norm_path] = name;
 
