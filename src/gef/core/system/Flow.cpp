@@ -1,4 +1,5 @@
 #include <gef/core/system/Flow.h>
+#include <gef/core/module/AtomicModule.h>
 #include <gef/core/scheduler/Scheduler.h>
 #include <stdexcept>
 #include <set>
@@ -102,7 +103,7 @@ void Flow::execute(Context& ctx) {
         }
 
         std::visit(overloaded{
-            [&](const AtomicModule& a) { a.execute(local_ctx); },
+            [&](const AtomicModule& a) { executeAtomicModule(a, local_ctx); },
             [&](const FlowModule&) {},
             [&](const PipelineModule&) {},
         }, (*def)->variant);

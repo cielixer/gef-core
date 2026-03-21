@@ -1,8 +1,10 @@
 #ifndef GEF_MODULEVARIANT_H_
 #define GEF_MODULEVARIANT_H_
 
-#include <gef/core/binding/Common.h>
-#include <gef/core/binding/Context.h>
+#include "gef/core/binding/Common.h"
+#include "gef/core/binding/Context.h"
+#include "gef/core/module/AtomicModule.h"
+
 #include <cstdint>
 #include <string>
 #include <variant>
@@ -22,9 +24,6 @@ struct Binding {
     std::string type_name;
 };
 
-/// C++ internal metadata for all module kinds.
-/// AtomicModules convert gef_metadata_t -> ModuleSignature on load;
-/// FlowModules / PipelineModules build their own at composition time.
 struct ModuleSignature {
     std::string          version;
     std::vector<Binding> bindings;
@@ -35,19 +34,9 @@ struct overloaded : Ts... {
     using Ts::operator()...;
 };
 
-/// Directed edge in a FlowModule DAG: "instance.binding" format.
 struct FlowEdge {
     std::string from;
     std::string to;
-};
-
-using ModuleHandle = void*;
-using gef_execute_fn_t = void (*)(gef::Context&);
-
-struct AtomicModule {
-    ModuleHandle          handle;
-    const gef_metadata_t* metadata; // lifetime tied to .so
-    gef_execute_fn_t      execute;
 };
 
 struct FlowModule {
@@ -62,7 +51,7 @@ struct PipelineModule {
 using ModuleVariant = std::variant<AtomicModule, FlowModule, PipelineModule>;
 
 struct ModuleDef {
-    std::string     name; // qualified: "flow1.subflow2.adder1"
+    std::string     name;
     ModuleSignature signature;
     ModuleVariant   variant;
 };

@@ -1,4 +1,8 @@
-#include <gef/core/system/System.h>
+#include "gef/core/system/System.h"
+
+#include "gef/core/module/AtomicModule.h"
+#include "gef/core/module/ModuleVariant.h"
+
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 
@@ -18,10 +22,18 @@ auto System::loadModule(const std::filesystem::path& path)
         return std::unexpected(std::move(atomic.error()));
     }
 
+    AtomicModule cloned = cloneAtomicModuleNonOwning(**atomic);
+
+    const auto* metadata = moduleMetadata(cloned);
+    if (!metadata) [[unlikely]] {
+        return std::unexpected(Error{ErrorCode::MetadataInvalid,
+                                     "Module metadata is null"});
+    }
+
     ModuleSignature sig;
-    sig.version = (*atomic)->metadata->version;
-    for (std::size_t i = 0; i < (*atomic)->metadata->num_bindings; ++i) {
-        const auto& b = (*atomic)->metadata->bindings[i];
+    sig.version = metadata->version;
+    for (std::size_t i = 0; i < metadata->num_bindings; ++i) {
+        const auto& b = metadata->bindings[i];
         sig.bindings.push_back(Binding{
             b.name,
             static_cast<BindingRole>(b.role),
@@ -37,9 +49,7 @@ auto System::loadModule(const std::filesystem::path& path)
         }
 
         (*existing_def)->signature = std::move(sig);
-        (*existing_def)->variant = AtomicModule{(*atomic)->handle,
-                                                (*atomic)->metadata,
-                                                (*atomic)->execute};
+        (*existing_def)->variant   = std::move(cloned);
 
         spdlog::info("Reloaded module '{}' with id {}", *name, *existing_id);
         return *existing_id;
@@ -52,7 +62,7 @@ auto System::loadModule(const std::filesystem::path& path)
     ModuleDef def{
         .name      = *name,
         .signature = std::move(sig),
-        .variant   = AtomicModule{(*atomic)->handle, (*atomic)->metadata, (*atomic)->execute},
+        .variant   = std::move(cloned),
     };
 
     auto id = module_registry_.add(std::move(def));
@@ -82,7 +92,9 @@ auto System::executeModule(ModuleId id, Context& ctx)
     }
 
     std::visit(overloaded{
-        [&](const AtomicModule& a) { a.execute(ctx); },
+        [&](const AtomicModule& atomic) {
+            executeAtomicModule(atomic, ctx);
+        },
         [&](const FlowModule&) {},
         [&](const PipelineModule&) {},
     }, (*def)->variant);

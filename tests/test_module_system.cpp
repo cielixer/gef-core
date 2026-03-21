@@ -16,7 +16,7 @@ static gef::ModuleDef makeAtomicModuleDef(std::string name,
             .version = std::move(version),
             .bindings = {},
         },
-        .variant = gef::AtomicModule{nullptr, nullptr, nullptr},
+        .variant = gef::createAtomicModule(nullptr, nullptr, nullptr),
     };
 }
 
@@ -30,13 +30,14 @@ TEST_CASE("AtomicModuleRegistry can load example_add module", "[module]") {
 
     auto atomic = gef::getAtomicModule(registry, "example_add");
     REQUIRE(atomic.has_value());
-    REQUIRE((*atomic)->metadata != nullptr);
-    REQUIRE(std::string((*atomic)->metadata->module_name) == "example_add");
-    REQUIRE((*atomic)->metadata->num_bindings == 3);
+    const auto* metadata = gef::moduleMetadata(**atomic);
+    REQUIRE(metadata != nullptr);
+    REQUIRE(std::string(metadata->module_name) == "example_add");
+    REQUIRE(metadata->num_bindings == 3);
 
-    REQUIRE(std::string((*atomic)->metadata->bindings[0].name) == "lhs");
-    REQUIRE(std::string((*atomic)->metadata->bindings[1].name) == "rhs");
-    REQUIRE(std::string((*atomic)->metadata->bindings[2].name) == "result");
+    REQUIRE(std::string(metadata->bindings[0].name) == "lhs");
+    REQUIRE(std::string(metadata->bindings[1].name) == "rhs");
+    REQUIRE(std::string(metadata->bindings[2].name) == "result");
 }
 
 TEST_CASE("AtomicModuleRegistry can execute example_add module", "[module][execute]") {
@@ -59,7 +60,7 @@ TEST_CASE("AtomicModuleRegistry can execute example_add module", "[module][execu
     ctx.set_binding("rhs", std::any(&b_value));
     ctx.set_binding("result", std::any(&result_value));
 
-    (*atomic)->execute(ctx);
+    gef::executeAtomicModule(**atomic, ctx);
 
     REQUIRE(result_value == 5);
 }
