@@ -1,6 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <algorithm>
 #include <filesystem>
+#include <thread>
+#include <vector>
+#include <mutex>
 #include <gef/app.h>
 #include <gef/core/module/ModuleVariant.h>
 #include <stdexcept>
@@ -80,7 +83,7 @@ TEST_CASE("AtomicModuleRegistry tracks loaded module names", "[module]") {
     REQUIRE((std::find(names.begin(), names.end(), "example_subtract") != names.end()));
 }
 
-TEST_CASE("System loads and executes example_add end-to-end", "[system][execute]") {
+TEST_CASE("System loads and executes example_add end-to-end", "[system][execute][system][loader]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
 
@@ -353,10 +356,38 @@ TEST_CASE("LoadAtomicModule detects missing gef_execute", "[module][error][symbo
 }
 
 TEST_CASE("LoadAtomicModule detects null metadata", "[module][error][metadata]") {
-    gef::ModuleRegistry registry;
-    auto path = getModulePath("null_metadata");
-    
-    auto result = gef::loadAtomicModule(registry, path);
-    REQUIRE_FALSE(result.has_value());
-    REQUIRE(result.error().code == gef::ErrorCode::MetadataInvalid);
+     gef::ModuleRegistry registry;
+     auto path = getModulePath("null_metadata");
+     
+     auto result = gef::loadAtomicModule(registry, path);
+     REQUIRE_FALSE(result.has_value());
+     REQUIRE(result.error().code == gef::ErrorCode::MetadataInvalid);
+}
+
+TEST_CASE("System handles concurrent module loading safely", "[system][thread]") {
+     gef::System system;
+     auto module_path = getModulePath("example_add");
+     
+     std::vector<std::thread> threads;
+     std::vector<gef::ModuleId> loaded_ids;
+     std::mutex ids_mutex;
+     
+     for (int i = 0; i < 2; ++i) {
+          threads.emplace_back([&]() {
+               auto id = system.loadModule(module_path);
+               if (id.has_value()) {
+                    std::lock_guard<std::mutex> lock(ids_mutex);
+                    loaded_ids.push_back(*id);
+               }
+          });
+     }
+     
+     for (auto& t : threads) {
+          t.join();
+     }
+     
+     REQUIRE(loaded_ids.size() == 2);
+     REQUIRE(loaded_ids[0] == loaded_ids[1]);
+     REQUIRE(system.moduleRegistry().size() == 1);
+     REQUIRE(gef::atomicModuleNames(system.moduleRegistry()).size() == 1);
 }
