@@ -5,10 +5,6 @@
 
 #include <memory>
 
-namespace boost::dll {
-class shared_library;
-}
-
 namespace gef {
 
 class Context;
