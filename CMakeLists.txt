@@ -32,6 +32,14 @@ if(NOT TARGET Boost::filesystem OR NOT TARGET Boost::system)
         "Ensure Boost is installed via pixi.")
 endif()
 
+# Boost.DLL is header-only and doesn't provide a CMake component target.
+# Create an interface library alias for clarity in link dependencies.
+if(NOT TARGET Boost::dll)
+    add_library(Boost_dll INTERFACE IMPORTED)
+    target_link_libraries(Boost_dll INTERFACE Boost::filesystem Boost::system)
+    add_library(Boost::dll ALIAS Boost_dll)
+endif()
+
 set_target_properties(gef PROPERTIES
     CXX_VISIBILITY_PRESET default
     VISIBILITY_INLINES_HIDDEN OFF
@@ -49,7 +57,7 @@ target_include_directories(gef
     src
 )
 
-target_link_libraries(gef PUBLIC spdlog::spdlog Boost::filesystem Boost::system)
+target_link_libraries(gef PUBLIC spdlog::spdlog Boost::dll)
 
 add_subdirectory(src)
 add_subdirectory(modules)
