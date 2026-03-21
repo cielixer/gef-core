@@ -24,6 +24,13 @@ add_library(gef SHARED)
 add_library(gef::gef ALIAS gef)
 
 find_package(spdlog REQUIRED)
+find_package(Boost REQUIRED COMPONENTS filesystem system)
+
+if(NOT TARGET Boost::filesystem OR NOT TARGET Boost::system)
+    message(FATAL_ERROR 
+        "Boost components not found. Required: filesystem, system. "
+        "Ensure Boost is installed via pixi.")
+endif()
 
 set_target_properties(gef PROPERTIES
     CXX_VISIBILITY_PRESET default
@@ -42,7 +49,7 @@ target_include_directories(gef
     src
 )
 
-target_link_libraries(gef PUBLIC spdlog::spdlog)
+target_link_libraries(gef PUBLIC spdlog::spdlog Boost::filesystem Boost::system)
 
 add_subdirectory(src)
 add_subdirectory(modules)
