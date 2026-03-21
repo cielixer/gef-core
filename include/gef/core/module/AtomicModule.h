@@ -30,15 +30,11 @@ private:
 
     friend auto moduleMetadata(const AtomicModule& module) -> const gef_metadata_t*;
     friend void executeAtomicModule(const AtomicModule& module, Context& ctx);
-    friend auto createAtomicModule(void* handle, const gef_metadata_t* metadata,
-                                    gef_execute_fn_t execute) -> AtomicModule;
     friend auto cloneAtomicModuleNonOwning(const AtomicModule& module) -> AtomicModule;
 };
 
 auto moduleMetadata(const AtomicModule& module) -> const gef_metadata_t*;
 void executeAtomicModule(const AtomicModule& module, Context& ctx);
-auto createAtomicModule(void* handle, const gef_metadata_t* metadata,
-                        gef_execute_fn_t execute) -> AtomicModule;
 
 } // namespace gef
 

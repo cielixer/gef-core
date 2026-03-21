@@ -1,4 +1,5 @@
 #include "gef/core/module/AtomicModule.h"
+#include "AtomicModuleInternal.h"
 
 #include "gef/core/binding/Context.h"
 
@@ -51,10 +52,11 @@ void executeAtomicModule(const AtomicModule& module, Context& ctx) {
 auto createAtomicModule(void* /*handle*/, const gef_metadata_t* metadata,
                         gef_execute_fn_t execute) -> AtomicModule {
     AtomicModule module;
-    module.state_ = std::make_unique<AtomicModuleState>();
-    module.state_->metadata = metadata;
-    module.state_->execute = execute;
-    module.state_->owns_handle = true;
+    auto state = std::make_unique<AtomicModuleState>();
+    state->metadata = metadata;
+    state->execute = execute;
+    state->owns_handle = true;
+    module._internalSetState(std::move(state));
     return module;
 }
 

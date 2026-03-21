@@ -8,6 +8,7 @@
 #include <gef/core/module/ModuleVariant.h>
 #include <stdexcept>
 #include "TestModulePath.h"
+#include "../src/gef/core/module/AtomicModuleInternal.h"
 
 namespace fs = std::filesystem;
 
