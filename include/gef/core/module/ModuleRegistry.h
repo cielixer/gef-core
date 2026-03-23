@@ -13,8 +13,7 @@
 
 namespace gef {
 
-class ModuleRegistry {
-  public:
+struct ModuleRegistry {
     ModuleRegistry() noexcept = default;
     ~ModuleRegistry();
 
@@ -23,42 +22,27 @@ class ModuleRegistry {
     ModuleRegistry(ModuleRegistry&&) noexcept = default;
     auto operator=(ModuleRegistry&&) noexcept -> ModuleRegistry& = default;
 
-    [[nodiscard]] auto add(ModuleDef def) -> ModuleId;
+    std::vector<ModuleDef> defs;
+    std::unordered_map<std::string, ModuleId> name_to_id;
 
-    [[nodiscard]] auto get(ModuleId id) const
-        -> std::expected<const ModuleDef*, Error>;
-
-    [[nodiscard]] auto get(ModuleId id)
-        -> std::expected<ModuleDef*, Error>;
-
-    [[nodiscard]] auto find(std::string_view qualified_name) const
-        -> std::expected<ModuleId, Error>;
-
-    [[nodiscard]] auto size() const noexcept -> std::size_t;
-
-  private:
-    friend auto loadAtomicModule(ModuleRegistry& registry,
-                                 const std::filesystem::path& path)
-        -> std::expected<std::string, Error>;
-
-    friend auto getAtomicModule(const ModuleRegistry& registry,
-                                std::string_view name) noexcept
-        -> std::expected<const AtomicModule*, Error>;
-
-    friend auto takeAtomicModule(ModuleRegistry& registry,
-                                 std::string_view name)
-        -> std::expected<AtomicModule, Error>;
-
-    friend auto atomicModuleNames(const ModuleRegistry& registry)
-        -> std::vector<std::string>;
-
-    std::vector<ModuleDef> defs_;
-    std::unordered_map<std::string, ModuleId> name_to_id_;
-
-    std::unordered_map<std::string, AtomicModule> atomic_modules_;
-    std::unordered_map<std::string, std::string> atomic_name_to_path_;
-    std::unordered_map<std::string, std::string> atomic_path_to_name_;
+    std::unordered_map<std::string, AtomicModule> atomic_modules;
+    std::unordered_map<std::string, std::string> atomic_name_to_path;
+    std::unordered_map<std::string, std::string> atomic_path_to_name;
 };
+
+[[nodiscard]] auto registryAdd(ModuleRegistry& registry, ModuleDef def) -> ModuleId;
+
+[[nodiscard]] auto registryGet(const ModuleRegistry& registry, ModuleId id)
+    -> std::expected<const ModuleDef*, Error>;
+
+[[nodiscard]] auto registryGet(ModuleRegistry& registry, ModuleId id)
+    -> std::expected<ModuleDef*, Error>;
+
+[[nodiscard]] auto registryFind(const ModuleRegistry& registry,
+                                std::string_view qualified_name)
+    -> std::expected<ModuleId, Error>;
+
+[[nodiscard]] auto registrySize(const ModuleRegistry& registry) noexcept -> std::size_t;
 
 [[nodiscard]] auto loadAtomicModule(ModuleRegistry& registry,
                                     const std::filesystem::path& path)

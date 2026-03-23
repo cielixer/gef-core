@@ -10,8 +10,7 @@
 
 namespace gef {
 
-class System {
-  public:
+struct System {
     System() noexcept = default;
     ~System() noexcept = default;
 
@@ -20,21 +19,17 @@ class System {
     System(System&&) noexcept = default;
     auto operator=(System&&) noexcept -> System& = default;
 
-    [[nodiscard]] auto loadModule(const std::filesystem::path& path)
-        -> std::expected<ModuleId, Error>;
-
-    [[nodiscard]] auto executeModule(std::string_view name, Context& ctx)
-        -> std::expected<void, Error>;
-
-    [[nodiscard]] auto executeModule(ModuleId id, Context& ctx)
-        -> std::expected<void, Error>;
-
-    [[nodiscard]] auto moduleRegistry() const noexcept -> const ModuleRegistry&;
-    [[nodiscard]] auto moduleRegistry() noexcept -> ModuleRegistry&;
-
-  private:
-    ModuleRegistry module_registry_;
+    ModuleRegistry module_registry;
 };
+
+[[nodiscard]] auto loadModule(System& system, const std::filesystem::path& path)
+    -> std::expected<ModuleId, Error>;
+
+[[nodiscard]] auto executeModule(System& system, std::string_view name, Context& ctx)
+    -> std::expected<void, Error>;
+
+[[nodiscard]] auto executeModule(System& system, ModuleId id, Context& ctx)
+    -> std::expected<void, Error>;
 
 } // namespace gef
 

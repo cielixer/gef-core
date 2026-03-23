@@ -1,23 +1,19 @@
 #ifndef GEF_SCHEDULER_H_
 #define GEF_SCHEDULER_H_
 
+#include "gef/core/system/Error.h"
+
+#include <expected>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace gef {
 
-class Scheduler {
-  public:
-    /// Performs topological sort using Kahn's algorithm with deterministic (lexicographic) tie-breaking.
-    /// @param nodes List of node identifiers
-    /// @param edges List of (source, destination) pairs representing directed edges
-    /// @return Vector of nodes in topological order
-    /// @throws std::runtime_error if a cycle is detected
-    [[nodiscard]] static std::vector<std::string> topologicalSort(
-        const std::vector<std::string>& nodes,
-        const std::vector<std::pair<std::string, std::string>>& edges);
-};
+[[nodiscard]] auto topologicalSort(
+    const std::vector<std::string>& nodes,
+    const std::vector<std::pair<std::string, std::string>>& edges)
+    -> std::expected<std::vector<std::string>, Error>;
 
 } // namespace gef
 

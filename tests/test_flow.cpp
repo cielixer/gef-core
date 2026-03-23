@@ -13,12 +13,13 @@ TEST_CASE("Scheduler handles linear chain A->B->C", "[flow][scheduler]") {
         {"B", "C"}
     };
     
-    auto result = gef::Scheduler::topologicalSort(nodes, edges);
+    auto result = gef::topologicalSort(nodes, edges);
+    REQUIRE(result.has_value());
     
-    REQUIRE(result.size() == 3);
-    REQUIRE(result[0] == "A");
-    REQUIRE(result[1] == "B");
-    REQUIRE(result[2] == "C");
+    REQUIRE(result->size() == 3);
+    REQUIRE((*result)[0] == "A");
+    REQUIRE((*result)[1] == "B");
+    REQUIRE((*result)[2] == "C");
 }
 
 TEST_CASE("Scheduler handles diamond graph with deterministic tie-breaking", "[flow][scheduler]") {
@@ -30,344 +31,343 @@ TEST_CASE("Scheduler handles diamond graph with deterministic tie-breaking", "[f
         {"C", "D"}
     };
     
-    auto result = gef::Scheduler::topologicalSort(nodes, edges);
+    auto result = gef::topologicalSort(nodes, edges);
+    REQUIRE(result.has_value());
     
-    REQUIRE(result.size() == 4);
-    REQUIRE(result[0] == "A");
-    REQUIRE((result[1] == "B" || result[1] == "C"));
-    REQUIRE((result[2] == "B" || result[2] == "C"));
-    REQUIRE(result[3] == "D");
+    REQUIRE(result->size() == 4);
+    REQUIRE((*result)[0] == "A");
+    REQUIRE(((*result)[1] == "B" || (*result)[1] == "C"));
+    REQUIRE(((*result)[2] == "B" || (*result)[2] == "C"));
+    REQUIRE((*result)[3] == "D");
 }
 
 TEST_CASE("Scheduler handles single node with no edges", "[flow][scheduler]") {
     std::vector<std::string> nodes = {"A"};
     std::vector<std::pair<std::string, std::string>> edges = {};
     
-    auto result = gef::Scheduler::topologicalSort(nodes, edges);
+    auto result = gef::topologicalSort(nodes, edges);
+    REQUIRE(result.has_value());
     
-    REQUIRE(result.size() == 1);
-    REQUIRE(result[0] == "A");
+    REQUIRE(result->size() == 1);
+    REQUIRE((*result)[0] == "A");
 }
 
 TEST_CASE("Scheduler handles empty graph", "[flow][scheduler]") {
     std::vector<std::string> nodes = {};
     std::vector<std::pair<std::string, std::string>> edges = {};
     
-    auto result = gef::Scheduler::topologicalSort(nodes, edges);
-    
-    REQUIRE(result.empty());
+    auto result = gef::topologicalSort(nodes, edges);
+    REQUIRE(result.has_value());
+    REQUIRE(result->empty());
 }
 
-TEST_CASE("Scheduler detects cycle and throws", "[flow][scheduler][error]") {
+TEST_CASE("Scheduler detects cycle and returns error", "[flow][scheduler][error]") {
     std::vector<std::string> nodes = {"A", "B"};
     std::vector<std::pair<std::string, std::string>> edges = {
         {"A", "B"},
         {"B", "A"}
     };
     
-    REQUIRE_THROWS_AS(
-        gef::Scheduler::topologicalSort(nodes, edges),
-        std::runtime_error
-    );
+    auto result = gef::topologicalSort(nodes, edges);
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::CycleDetected);
 }
 
 TEST_CASE("Scheduler orders independent nodes lexicographically", "[flow][scheduler]") {
     std::vector<std::string> nodes = {"C", "A", "B"};
     std::vector<std::pair<std::string, std::string>> edges = {};
 
-    auto result = gef::Scheduler::topologicalSort(nodes, edges);
-
-    REQUIRE(result == std::vector<std::string>{"A", "B", "C"});
+    auto result = gef::topologicalSort(nodes, edges);
+    REQUIRE(result.has_value());
+    REQUIRE(*result == std::vector<std::string>{"A", "B", "C"});
 }
 
-TEST_CASE("Scheduler throws when edges reference unknown nodes", "[flow][scheduler][error]") {
+TEST_CASE("Scheduler returns error when edges reference unknown nodes", "[flow][scheduler][error]") {
     std::vector<std::string> nodes = {"A", "B"};
     std::vector<std::pair<std::string, std::string>> edges = {
         {"A", "C"}
     };
 
-    REQUIRE_THROWS_AS(
-        gef::Scheduler::topologicalSort(nodes, edges),
-        std::runtime_error
-    );
+    auto result = gef::topologicalSort(nodes, edges);
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::CycleDetected);
 }
 
 TEST_CASE("Flow addModule accepts valid module name", "[flow][addModule]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
+    auto flow = gef::createFlow(system.module_registry);
     
-    REQUIRE_NOTHROW(flow.addModule("adder1", "example_add"));
+    auto result = gef::flowAddModule(flow, "adder1", "example_add");
+    REQUIRE(result.has_value());
 }
 
 TEST_CASE("Flow addModule rejects duplicate instance name", "[flow][addModule][error]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder1", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder1", "example_add").value();
     
-    REQUIRE_THROWS_AS(
-        flow.addModule("adder1", "example_add"),
-        std::runtime_error
-    );
+    auto result = gef::flowAddModule(flow, "adder1", "example_add");
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::DuplicateInstance);
 }
 
 TEST_CASE("Flow addModule rejects unknown module type", "[flow][addModule][error]") {
     gef::System system;
-    gef::Flow flow(system.moduleRegistry());
+    auto flow = gef::createFlow(system.module_registry);
     
-    REQUIRE_THROWS_AS(
-        flow.addModule("unknown_inst", "nonexistent_module"),
-        std::runtime_error
-    );
+    auto result = gef::flowAddModule(flow, "unknown_inst", "nonexistent_module");
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::ModuleNotFound);
 }
 
 TEST_CASE("Flow connect accepts valid endpoints", "[flow][connect]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder1", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder1", "example_add").value();
     
-    REQUIRE_NOTHROW(flow.connect<int>("inputs.lhs", "adder1.lhs"));
-    REQUIRE_NOTHROW(flow.connect<int>("adder1.result", "outputs.result"));
+    auto r1 = gef::flowConnect<int>(flow, "inputs.lhs", "adder1.lhs");
+    REQUIRE(r1.has_value());
+    auto r2 = gef::flowConnect<int>(flow, "adder1.result", "outputs.result");
+    REQUIRE(r2.has_value());
 }
 
 TEST_CASE("Flow connect rejects unknown instance in from endpoint", "[flow][connect][error]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder1", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder1", "example_add").value();
     
-    REQUIRE_THROWS_AS(
-        flow.connect<int>("unknown.output", "adder1.lhs"),
-        std::runtime_error
-    );
+    auto result = gef::flowConnect<int>(flow, "unknown.output", "adder1.lhs");
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::InvalidEndpoint);
 }
 
 TEST_CASE("Flow connect rejects unknown instance in to endpoint", "[flow][connect][error]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder1", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder1", "example_add").value();
     
-    REQUIRE_THROWS_AS(
-        flow.connect<int>("adder1.result", "unknown.input"),
-        std::runtime_error
-    );
+    auto result = gef::flowConnect<int>(flow, "adder1.result", "unknown.input");
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::InvalidEndpoint);
 }
 
 TEST_CASE("Flow connect rejects malformed from endpoint", "[flow][connect][error]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder1", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder1", "example_add").value();
 
-    REQUIRE_THROWS_AS(
-        flow.connect<int>("malformed", "adder1.lhs"),
-        std::runtime_error
-    );
+    auto result = gef::flowConnect<int>(flow, "malformed", "adder1.lhs");
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::InvalidEndpoint);
 }
 
 TEST_CASE("Flow connect rejects malformed to endpoint", "[flow][connect][error]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
 
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder1", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder1", "example_add").value();
 
-    REQUIRE_THROWS_AS(
-        flow.connect<int>("adder1.result", "malformed"),
-        std::runtime_error
-    );
+    auto result = gef::flowConnect<int>(flow, "adder1.result", "malformed");
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::InvalidEndpoint);
 }
 
 
 TEST_CASE("Flow executes linear chain with two adders", "[flow][execute][integration]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
     
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder1", "example_add");
-    flow.addModule("adder2", "example_add");
-    flow.connect<int>("inputs.lhs", "adder1.lhs");
-    flow.connect<int>("inputs.rhs", "adder1.rhs");
-    flow.connect<int>("adder1.result", "adder2.lhs");
-    flow.connect<int>("inputs.offset", "adder2.rhs");
-    flow.connect<int>("adder2.result", "outputs.sum");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder1", "example_add").value();
+    gef::flowAddModule(flow, "adder2", "example_add").value();
+    gef::flowConnect<int>(flow, "inputs.lhs", "adder1.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.rhs", "adder1.rhs").value();
+    gef::flowConnect<int>(flow, "adder1.result", "adder2.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.offset", "adder2.rhs").value();
+    gef::flowConnect<int>(flow, "adder2.result", "outputs.sum").value();
     
     gef::Context ctx;
     int lhs = 2, rhs = 3, offset = 10, sum = 0;
-    ctx.set_binding("lhs", std::any(&lhs));
-    ctx.set_binding("rhs", std::any(&rhs));
-    ctx.set_binding("offset", std::any(&offset));
-    ctx.set_binding("sum", std::any(&sum));
+    gef::setBinding(ctx, "lhs", std::any(&lhs));
+    gef::setBinding(ctx, "rhs", std::any(&rhs));
+    gef::setBinding(ctx, "offset", std::any(&offset));
+    gef::setBinding(ctx, "sum", std::any(&sum));
     
-    flow.execute(ctx);
-    
+    auto result = gef::flowExecute(flow, ctx);
+    REQUIRE(result.has_value());
     REQUIRE(sum == 15);
 }
 
 TEST_CASE("Flow boundary inputs/outputs work correctly", "[flow][execute][boundary]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
     
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder", "example_add");
-    flow.connect<int>("inputs.a", "adder.lhs");
-    flow.connect<int>("inputs.b", "adder.rhs");
-    flow.connect<int>("adder.result", "outputs.c");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder", "example_add").value();
+    gef::flowConnect<int>(flow, "inputs.a", "adder.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.b", "adder.rhs").value();
+    gef::flowConnect<int>(flow, "adder.result", "outputs.c").value();
     
     gef::Context ctx;
     int a = 7, b = 8, c = 0;
-    ctx.set_binding("a", std::any(&a));
-    ctx.set_binding("b", std::any(&b));
-    ctx.set_binding("c", std::any(&c));
+    gef::setBinding(ctx, "a", std::any(&a));
+    gef::setBinding(ctx, "b", std::any(&b));
+    gef::setBinding(ctx, "c", std::any(&c));
     
-    flow.execute(ctx);
-    
+    auto result = gef::flowExecute(flow, ctx);
+    REQUIRE(result.has_value());
     REQUIRE(c == 15);
 }
 
-TEST_CASE("Flow detects cycles and throws", "[flow][execute][error]") {
+TEST_CASE("Flow detects cycles and returns error", "[flow][execute][error]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
     
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder1", "example_add");
-    flow.addModule("adder2", "example_add");
-    flow.connect<int>("adder1.result", "adder2.lhs");
-    flow.connect<int>("adder2.result", "adder1.rhs");
-    flow.connect<int>("inputs.seed", "adder2.rhs");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder1", "example_add").value();
+    gef::flowAddModule(flow, "adder2", "example_add").value();
+    gef::flowConnect<int>(flow, "adder1.result", "adder2.lhs").value();
+    gef::flowConnect<int>(flow, "adder2.result", "adder1.rhs").value();
+    gef::flowConnect<int>(flow, "inputs.seed", "adder2.rhs").value();
     
     gef::Context ctx;
     int seed = 1;
-    ctx.set_binding("seed", std::any(&seed));
+    gef::setBinding(ctx, "seed", std::any(&seed));
     
-    REQUIRE_THROWS_AS(flow.execute(ctx), std::runtime_error);
+    auto result = gef::flowExecute(flow, ctx);
+    REQUIRE_FALSE(result.has_value());
+    REQUIRE(result.error().code == gef::ErrorCode::CycleDetected);
 }
 
 TEST_CASE("Flow config injection works", "[flow][execute][config]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
-    system.loadModule(module_path).value();
+    gef::loadModule(system, module_path).value();
     
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("adder", "example_add");
-    flow.connect<int>("inputs.a", "adder.lhs");
-    flow.connect<int>("inputs.b", "adder.rhs");
-    flow.connect<int>("adder.result", "outputs.result");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "adder", "example_add").value();
+    gef::flowConnect<int>(flow, "inputs.a", "adder.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.b", "adder.rhs").value();
+    gef::flowConnect<int>(flow, "adder.result", "outputs.result").value();
     
     int multiplier = 2;
-    flow.setConfig<int>("multiplier", multiplier);
+    gef::flowSetConfig<int>(flow, "multiplier", multiplier);
     
     gef::Context ctx;
     int a = 5, b = 3, result = 0;
-    ctx.set_binding("a", std::any(&a));
-    ctx.set_binding("b", std::any(&b));
-    ctx.set_binding("result", std::any(&result));
+    gef::setBinding(ctx, "a", std::any(&a));
+    gef::setBinding(ctx, "b", std::any(&b));
+    gef::setBinding(ctx, "result", std::any(&result));
     
-    flow.execute(ctx);
-    
+    auto exec_result = gef::flowExecute(flow, ctx);
+    REQUIRE(exec_result.has_value());
     REQUIRE(result == 8);
 }
 
 TEST_CASE("Flow executes diamond DAG correctly", "[flow][execute][integration]") {
     gef::System system;
-    system.loadModule(getModulePath("example_add")).value();
+    gef::loadModule(system, getModulePath("example_add")).value();
     
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("left", "example_add");
-    flow.addModule("right", "example_add");
-    flow.addModule("merger", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "left", "example_add").value();
+    gef::flowAddModule(flow, "right", "example_add").value();
+    gef::flowAddModule(flow, "merger", "example_add").value();
     
-    flow.connect<int>("inputs.value", "left.lhs");
-    flow.connect<int>("inputs.left_offset", "left.rhs");
-    flow.connect<int>("inputs.value", "right.lhs");
-    flow.connect<int>("inputs.right_offset", "right.rhs");
-    flow.connect<int>("left.result", "merger.lhs");
-    flow.connect<int>("right.result", "merger.rhs");
-    flow.connect<int>("merger.result", "outputs.final");
+    gef::flowConnect<int>(flow, "inputs.value", "left.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.left_offset", "left.rhs").value();
+    gef::flowConnect<int>(flow, "inputs.value", "right.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.right_offset", "right.rhs").value();
+    gef::flowConnect<int>(flow, "left.result", "merger.lhs").value();
+    gef::flowConnect<int>(flow, "right.result", "merger.rhs").value();
+    gef::flowConnect<int>(flow, "merger.result", "outputs.final").value();
     
     gef::Context ctx;
-    int value = 10, left_offset = 5, right_offset = 3, final = 0;
-    ctx.set_binding("value", std::any(&value));
-    ctx.set_binding("left_offset", std::any(&left_offset));
-    ctx.set_binding("right_offset", std::any(&right_offset));
-    ctx.set_binding("final", std::any(&final));
+    int value = 10, left_offset = 5, right_offset = 3, final_val = 0;
+    gef::setBinding(ctx, "value", std::any(&value));
+    gef::setBinding(ctx, "left_offset", std::any(&left_offset));
+    gef::setBinding(ctx, "right_offset", std::any(&right_offset));
+    gef::setBinding(ctx, "final", std::any(&final_val));
     
-    flow.execute(ctx);
-    
-    REQUIRE(final == 28);
+    auto result = gef::flowExecute(flow, ctx);
+    REQUIRE(result.has_value());
+    REQUIRE(final_val == 28);
 }
 
 TEST_CASE("Flow handles multi-output modules", "[flow][execute][integration]") {
     gef::System system;
-    system.loadModule(getModulePath("example_divide")).value();
-    system.loadModule(getModulePath("example_add")).value();
+    gef::loadModule(system, getModulePath("example_divide")).value();
+    gef::loadModule(system, getModulePath("example_add")).value();
     
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("divider", "example_divide");
-    flow.addModule("adder", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "divider", "example_divide").value();
+    gef::flowAddModule(flow, "adder", "example_add").value();
     
-    flow.connect<int>("inputs.dividend", "divider.lhs");
-    flow.connect<int>("inputs.divisor", "divider.rhs");
-    flow.connect<int>("divider.quotient", "adder.lhs");
-    flow.connect<int>("divider.remainder", "adder.rhs");
-    flow.connect<int>("adder.result", "outputs.sum");
+    gef::flowConnect<int>(flow, "inputs.dividend", "divider.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.divisor", "divider.rhs").value();
+    gef::flowConnect<int>(flow, "divider.quotient", "adder.lhs").value();
+    gef::flowConnect<int>(flow, "divider.remainder", "adder.rhs").value();
+    gef::flowConnect<int>(flow, "adder.result", "outputs.sum").value();
     
     gef::Context ctx;
     int dividend = 17, divisor = 5, sum = 0;
-    ctx.set_binding("dividend", std::any(&dividend));
-    ctx.set_binding("divisor", std::any(&divisor));
-    ctx.set_binding("sum", std::any(&sum));
+    gef::setBinding(ctx, "dividend", std::any(&dividend));
+    gef::setBinding(ctx, "divisor", std::any(&divisor));
+    gef::setBinding(ctx, "sum", std::any(&sum));
     
-    flow.execute(ctx);
-    
+    auto result = gef::flowExecute(flow, ctx);
+    REQUIRE(result.has_value());
     REQUIRE(sum == 5);
 }
 
 TEST_CASE("Flow chains multiple instances of same module", "[flow][execute][integration]") {
     gef::System system;
-    system.loadModule(getModulePath("example_add")).value();
+    gef::loadModule(system, getModulePath("example_add")).value();
     
-    gef::Flow flow(system.moduleRegistry());
-    flow.addModule("step1", "example_add");
-    flow.addModule("step2", "example_add");
-    flow.addModule("step3", "example_add");
+    auto flow = gef::createFlow(system.module_registry);
+    gef::flowAddModule(flow, "step1", "example_add").value();
+    gef::flowAddModule(flow, "step2", "example_add").value();
+    gef::flowAddModule(flow, "step3", "example_add").value();
     
-    flow.connect<int>("inputs.initial", "step1.lhs");
-    flow.connect<int>("inputs.increment1", "step1.rhs");
-    flow.connect<int>("step1.result", "step2.lhs");
-    flow.connect<int>("inputs.increment2", "step2.rhs");
-    flow.connect<int>("step2.result", "step3.lhs");
-    flow.connect<int>("inputs.increment3", "step3.rhs");
-    flow.connect<int>("step3.result", "outputs.final");
+    gef::flowConnect<int>(flow, "inputs.initial", "step1.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.increment1", "step1.rhs").value();
+    gef::flowConnect<int>(flow, "step1.result", "step2.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.increment2", "step2.rhs").value();
+    gef::flowConnect<int>(flow, "step2.result", "step3.lhs").value();
+    gef::flowConnect<int>(flow, "inputs.increment3", "step3.rhs").value();
+    gef::flowConnect<int>(flow, "step3.result", "outputs.final").value();
     
     gef::Context ctx;
-    int initial = 1, increment1 = 10, increment2 = 100, increment3 = 1000, final = 0;
-    ctx.set_binding("initial", std::any(&initial));
-    ctx.set_binding("increment1", std::any(&increment1));
-    ctx.set_binding("increment2", std::any(&increment2));
-    ctx.set_binding("increment3", std::any(&increment3));
-    ctx.set_binding("final", std::any(&final));
+    int initial = 1, increment1 = 10, increment2 = 100, increment3 = 1000, final_val = 0;
+    gef::setBinding(ctx, "initial", std::any(&initial));
+    gef::setBinding(ctx, "increment1", std::any(&increment1));
+    gef::setBinding(ctx, "increment2", std::any(&increment2));
+    gef::setBinding(ctx, "increment3", std::any(&increment3));
+    gef::setBinding(ctx, "final", std::any(&final_val));
     
-    flow.execute(ctx);
-    
-    REQUIRE(final == 1111);
+    auto result = gef::flowExecute(flow, ctx);
+    REQUIRE(result.has_value());
+    REQUIRE(final_val == 1111);
 }

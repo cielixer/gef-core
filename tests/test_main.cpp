@@ -1,10 +1,10 @@
 #include <gef/app.h>
-#include <iostream>
+#include <print>
 
-int main() {
+auto main() -> int {
     gef::ModuleRegistry module_registry;
     gef::Context ctx;
 
-    std::cout << "Basic component instantiation test passed!" << std::endl;
+    std::println("Basic component instantiation test passed!");
     return 0;
 }

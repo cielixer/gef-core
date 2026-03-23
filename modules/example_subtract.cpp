@@ -1,9 +1,9 @@
 #include <gef/module.hpp>
 
 void execute(gef::Context& ctx) {
-    auto& lhs   = ctx.input<int>("lhs");
-    auto& rhs   = ctx.input<int>("rhs");
-    auto& result = ctx.output<int>("result");
+    auto& lhs    = gef::ctxInput<int>(ctx, "lhs");
+    auto& rhs    = gef::ctxInput<int>(ctx, "rhs");
+    auto& result = gef::ctxOutput<int>(ctx, "result");
 
     result = lhs - rhs;
 }

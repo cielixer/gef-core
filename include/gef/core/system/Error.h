@@ -5,7 +5,6 @@
 
 namespace gef {
 
-/// Error codes for expected (recoverable) failure paths.
 enum class ErrorCode {
     FileNotFound,
     InvalidFileType,
@@ -13,9 +12,12 @@ enum class ErrorCode {
     SymbolNotFound,
     MetadataInvalid,
     ModuleNotFound,
+    CycleDetected,
+    DuplicateInstance,
+    InvalidEndpoint,
+    ExecutionFailed,
 };
 
-/// Lightweight, copyable error type for use with std::expected.
 struct Error {
     ErrorCode code;
     std::string message;

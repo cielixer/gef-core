@@ -8,16 +8,16 @@
 
 namespace gef {
 
-auto System::loadModule(const std::filesystem::path& path)
+auto loadModule(System& system, const std::filesystem::path& path)
     -> std::expected<ModuleId, Error> {
     spdlog::debug("Loading module from: {}", path.string());
 
-    auto name = loadAtomicModule(module_registry_, path);
+    auto name = loadAtomicModule(system.module_registry, path);
     if (!name) [[unlikely]] {
         return std::unexpected(std::move(name.error()));
     }
 
-    auto atomic = getAtomicModule(module_registry_, *name);
+    auto atomic = getAtomicModule(system.module_registry, *name);
     if (!atomic) [[unlikely]] {
         return std::unexpected(std::move(atomic.error()));
     }
@@ -41,9 +41,9 @@ auto System::loadModule(const std::filesystem::path& path)
         });
     }
 
-    auto existing_id = module_registry_.find(*name);
+    auto existing_id = registryFind(system.module_registry, *name);
     if (existing_id) {
-        auto existing_def = module_registry_.get(*existing_id);
+        auto existing_def = registryGet(system.module_registry, *existing_id);
         if (!existing_def) [[unlikely]] {
             return std::unexpected(std::move(existing_def.error()));
         }
@@ -65,28 +65,28 @@ auto System::loadModule(const std::filesystem::path& path)
         .variant   = std::move(cloned),
     };
 
-    auto id = module_registry_.add(std::move(def));
+    auto id = registryAdd(system.module_registry, std::move(def));
     spdlog::info("Registered module '{}' with id {}", *name, id);
     return id;
 }
 
-auto System::executeModule(std::string_view name, Context& ctx)
+auto executeModule(System& system, std::string_view name, Context& ctx)
     -> std::expected<void, Error> {
     if (name.empty()) [[unlikely]] {
         throw std::invalid_argument("Module name cannot be empty");
     }
 
-    auto id = module_registry_.find(name);
+    auto id = registryFind(system.module_registry, name);
     if (!id) [[unlikely]] {
         return std::unexpected(std::move(id.error()));
     }
 
-    return executeModule(*id, ctx);
+    return executeModule(system, *id, ctx);
 }
 
-auto System::executeModule(ModuleId id, Context& ctx)
+auto executeModule(System& system, ModuleId id, Context& ctx)
     -> std::expected<void, Error> {
-    auto def = module_registry_.get(id);
+    auto def = registryGet(system.module_registry, id);
     if (!def) [[unlikely]] {
         return std::unexpected(std::move(def.error()));
     }
@@ -100,14 +100,6 @@ auto System::executeModule(ModuleId id, Context& ctx)
     }, (*def)->variant);
 
     return {};
-}
-
-auto System::moduleRegistry() const noexcept -> const ModuleRegistry& {
-    return module_registry_;
-}
-
-auto System::moduleRegistry() noexcept -> ModuleRegistry& {
-    return module_registry_;
 }
 
 } // namespace gef

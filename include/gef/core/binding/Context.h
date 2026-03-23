@@ -2,43 +2,42 @@
 #define GEF_CONTEXT_H_
 
 #include <any>
-#include <map>
 #include <string>
+#include <unordered_map>
 
 namespace gef {
 
-class Context {
-  public:
-    Context()          = default;
-    virtual ~Context() = default;
-
-    template <typename T> [[nodiscard]] const T& input(const char* name) {
-        return *std::any_cast<T*>(bindings_[name]);
-    }
-
-    template <typename T> [[nodiscard]] T& output(const char* name) {
-        return *std::any_cast<T*>(bindings_[name]);
-    }
-
-    template <typename T> [[nodiscard]] T& inout(const char* name) {
-        return *std::any_cast<T*>(bindings_[name]);
-    }
-
-    template <typename T> [[nodiscard]] const T& config(const char* name) {
-        return *std::any_cast<T*>(bindings_[name]);
-    }
-
-    [[nodiscard]] std::any& get_binding(const std::string& name) {
-        return bindings_[name];
-    }
-
-    void set_binding(const std::string& name, std::any value) {
-        bindings_[name] = value;
-    }
-
-  private:
-    std::map<std::string, std::any> bindings_;
+struct Context {
+    std::unordered_map<std::string, std::any> bindings;
 };
+
+template <typename T>
+[[nodiscard]] auto ctxInput(Context& ctx, const char* name) -> const T& {
+    return *std::any_cast<T*>(ctx.bindings[name]);
+}
+
+template <typename T>
+[[nodiscard]] auto ctxOutput(Context& ctx, const char* name) -> T& {
+    return *std::any_cast<T*>(ctx.bindings[name]);
+}
+
+template <typename T>
+[[nodiscard]] auto ctxInout(Context& ctx, const char* name) -> T& {
+    return *std::any_cast<T*>(ctx.bindings[name]);
+}
+
+template <typename T>
+[[nodiscard]] auto ctxConfig(Context& ctx, const char* name) -> const T& {
+    return *std::any_cast<T*>(ctx.bindings[name]);
+}
+
+[[nodiscard]] inline auto getBinding(Context& ctx, const std::string& name) -> std::any& {
+    return ctx.bindings[name];
+}
+
+inline void setBinding(Context& ctx, const std::string& name, std::any value) {
+    ctx.bindings[name] = std::move(value);
+}
 
 } // namespace gef
 

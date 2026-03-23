@@ -1,17 +1,12 @@
 #include "gef/core/module/ModuleRegistry.h"
 
-#include "gef/core/module/AtomicModule.h"
+#include "AtomicModule.hpp"
 
-#include <boost/dll/shared_library.hpp>
 #include <boost/system/system_error.hpp>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 
 namespace gef {
-
-auto createAtomicModuleWithLibrary(boost::dll::shared_library library,
-                                    const gef_metadata_t* metadata,
-                                    gef_execute_fn_t execute) -> AtomicModule;
 
 namespace {
 
@@ -28,45 +23,46 @@ auto normalizePath(const std::filesystem::path& path) -> std::string {
 
 ModuleRegistry::~ModuleRegistry() = default;
 
-auto ModuleRegistry::add(ModuleDef def) -> ModuleId {
+auto registryAdd(ModuleRegistry& registry, ModuleDef def) -> ModuleId {
     if (def.name.empty()) [[unlikely]] {
         throw std::invalid_argument("Module name cannot be empty");
     }
-    if (name_to_id_.contains(def.name)) [[unlikely]] {
+    if (registry.name_to_id.contains(def.name)) [[unlikely]] {
         throw std::invalid_argument("Module already registered: " + def.name);
     }
 
-    ModuleId id      = static_cast<ModuleId>(defs_.size());
-    name_to_id_[def.name] = id;
-    defs_.push_back(std::move(def));
+    ModuleId id = static_cast<ModuleId>(registry.defs.size());
+    registry.name_to_id[def.name] = id;
+    registry.defs.push_back(std::move(def));
     return id;
 }
 
-auto ModuleRegistry::get(ModuleId id) const
+auto registryGet(const ModuleRegistry& registry, ModuleId id)
     -> std::expected<const ModuleDef*, Error> {
-    if (id >= defs_.size()) [[unlikely]] {
+    if (id >= registry.defs.size()) [[unlikely]] {
         return std::unexpected(Error{
             ErrorCode::ModuleNotFound,
             "Module ID out of range: " + std::to_string(id),
         });
     }
-    return &defs_[id];
+    return &registry.defs[id];
 }
 
-auto ModuleRegistry::get(ModuleId id) -> std::expected<ModuleDef*, Error> {
-    if (id >= defs_.size()) [[unlikely]] {
+auto registryGet(ModuleRegistry& registry, ModuleId id)
+    -> std::expected<ModuleDef*, Error> {
+    if (id >= registry.defs.size()) [[unlikely]] {
         return std::unexpected(Error{
             ErrorCode::ModuleNotFound,
             "Module ID out of range: " + std::to_string(id),
         });
     }
-    return &defs_[id];
+    return &registry.defs[id];
 }
 
-auto ModuleRegistry::find(std::string_view name) const
+auto registryFind(const ModuleRegistry& registry, std::string_view name)
     -> std::expected<ModuleId, Error> {
-    auto it = name_to_id_.find(std::string(name));
-    if (it == name_to_id_.end()) {
+    auto it = registry.name_to_id.find(std::string(name));
+    if (it == registry.name_to_id.end()) {
         return std::unexpected(Error{
             ErrorCode::ModuleNotFound,
             std::string("Module not found: ") + std::string(name),
@@ -75,8 +71,8 @@ auto ModuleRegistry::find(std::string_view name) const
     return it->second;
 }
 
-auto ModuleRegistry::size() const noexcept -> std::size_t {
-    return defs_.size();
+auto registrySize(const ModuleRegistry& registry) noexcept -> std::size_t {
+    return registry.defs.size();
 }
 
 auto loadAtomicModule(ModuleRegistry& registry, const std::filesystem::path& path)
@@ -143,32 +139,32 @@ auto loadAtomicModule(ModuleRegistry& registry, const std::filesystem::path& pat
 
     std::string name(metadata->module_name);
 
-    if (auto it = registry.atomic_name_to_path_.find(name);
-        it != registry.atomic_name_to_path_.end()) {
+    if (auto it = registry.atomic_name_to_path.find(name);
+        it != registry.atomic_name_to_path.end()) {
         std::string old_path = it->second;
-        if (auto old_it = registry.atomic_modules_.find(name);
-            old_it != registry.atomic_modules_.end()) {
-            registry.atomic_modules_.erase(old_it);
+        if (auto old_it = registry.atomic_modules.find(name);
+            old_it != registry.atomic_modules.end()) {
+            registry.atomic_modules.erase(old_it);
         }
-        registry.atomic_path_to_name_.erase(old_path);
-        registry.atomic_name_to_path_.erase(it);
+        registry.atomic_path_to_name.erase(old_path);
+        registry.atomic_name_to_path.erase(it);
     }
 
-    if (auto it = registry.atomic_path_to_name_.find(norm_path);
-        it != registry.atomic_path_to_name_.end()) {
+    if (auto it = registry.atomic_path_to_name.find(norm_path);
+        it != registry.atomic_path_to_name.end()) {
         std::string old_name = it->second;
-        if (auto old_it = registry.atomic_modules_.find(old_name);
-            old_it != registry.atomic_modules_.end()) {
-            registry.atomic_modules_.erase(old_it);
+        if (auto old_it = registry.atomic_modules.find(old_name);
+            old_it != registry.atomic_modules.end()) {
+            registry.atomic_modules.erase(old_it);
         }
-        registry.atomic_name_to_path_.erase(old_name);
-        registry.atomic_path_to_name_.erase(it);
+        registry.atomic_name_to_path.erase(old_name);
+        registry.atomic_path_to_name.erase(it);
     }
 
-    registry.atomic_modules_.insert_or_assign(
+    registry.atomic_modules.insert_or_assign(
         name, createAtomicModuleWithLibrary(std::move(library), metadata, execute));
-    registry.atomic_name_to_path_[name]      = norm_path;
-    registry.atomic_path_to_name_[norm_path] = name;
+    registry.atomic_name_to_path[name]      = norm_path;
+    registry.atomic_path_to_name[norm_path] = name;
 
     spdlog::info("Loaded or reloaded atomic module '{}' from {}", name, norm_path);
     return name;
@@ -176,8 +172,8 @@ auto loadAtomicModule(ModuleRegistry& registry, const std::filesystem::path& pat
 
 auto getAtomicModule(const ModuleRegistry& registry, std::string_view name) noexcept
     -> std::expected<const AtomicModule*, Error> {
-    auto it = registry.atomic_modules_.find(std::string(name));
-    if (it == registry.atomic_modules_.end()) {
+    auto it = registry.atomic_modules.find(std::string(name));
+    if (it == registry.atomic_modules.end()) {
         return std::unexpected(Error{
             ErrorCode::ModuleNotFound,
             std::string("Atomic module not found: ") + std::string(name),
@@ -188,22 +184,22 @@ auto getAtomicModule(const ModuleRegistry& registry, std::string_view name) noex
 
 auto takeAtomicModule(ModuleRegistry& registry, std::string_view name)
     -> std::expected<AtomicModule, Error> {
-    auto it = registry.atomic_modules_.find(std::string(name));
-    if (it == registry.atomic_modules_.end()) {
+    auto it = registry.atomic_modules.find(std::string(name));
+    if (it == registry.atomic_modules.end()) {
         return std::unexpected(Error{
             ErrorCode::ModuleNotFound,
             std::string("Atomic module not found: ") + std::string(name),
         });
     }
     AtomicModule module = std::move(it->second);
-    registry.atomic_modules_.erase(it);
+    registry.atomic_modules.erase(it);
     return module;
 }
 
 auto atomicModuleNames(const ModuleRegistry& registry) -> std::vector<std::string> {
     std::vector<std::string> names;
-    names.reserve(registry.atomic_modules_.size());
-    for (const auto& [name, _] : registry.atomic_modules_) {
+    names.reserve(registry.atomic_modules.size());
+    for (const auto& [name, _] : registry.atomic_modules) {
         names.push_back(name);
     }
     return names;

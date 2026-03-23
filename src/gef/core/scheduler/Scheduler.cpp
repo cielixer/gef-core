@@ -1,66 +1,75 @@
 #include <gef/core/scheduler/Scheduler.h>
-#include <map>
-#include <set>
-#include <stdexcept>
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
 
 namespace gef {
 
-std::vector<std::string> Scheduler::topologicalSort(
+auto topologicalSort(
     const std::vector<std::string>& nodes,
-    const std::vector<std::pair<std::string, std::string>>& edges) {
-  
-  std::vector<std::string> result;
-  
-  if (nodes.empty()) {
-    return result;
-  }
+    const std::vector<std::pair<std::string, std::string>>& edges)
+    -> std::expected<std::vector<std::string>, Error> {
 
-  // Build adjacency list and in-degree map
-  std::map<std::string, std::vector<std::string>> adjacency;
-  std::map<std::string, int> in_degree;
-  
-  // Initialize in-degree for all nodes
-  for (const auto& node : nodes) {
-    in_degree[node] = 0;
-    adjacency[node];  // Ensure node exists in adjacency
-  }
-  
-  // Process edges and build adjacency list
-  for (const auto& [source, destination] : edges) {
-    adjacency[source].push_back(destination);
-    in_degree[destination]++;
-  }
-  
-  // Queue: nodes with in-degree 0, maintained in sorted order for determinism
-  std::set<std::string> queue;
-  for (const auto& [node, degree] : in_degree) {
-    if (degree == 0) {
-      queue.insert(node);
+    if (nodes.empty()) {
+        return std::vector<std::string>{};
     }
-  }
-  
-  // Process queue (Kahn's algorithm with lexicographic tie-breaking)
-  while (!queue.empty()) {
-    // Dequeue lexicographically smallest node
-    auto current = *queue.begin();
-    queue.erase(queue.begin());
-    result.push_back(current);
-    
-    // Process neighbors
-    for (const auto& neighbor : adjacency[current]) {
-      in_degree[neighbor]--;
-      if (in_degree[neighbor] == 0) {
-        queue.insert(neighbor);
-      }
+
+    std::unordered_map<std::string, std::vector<std::string>> adjacency;
+    std::unordered_map<std::string, int> in_degree;
+
+    for (const auto& node : nodes) {
+        in_degree[node] = 0;
+        adjacency[node];
     }
-  }
-  
-  // Cycle detection: if not all nodes were processed, a cycle exists
-  if (result.size() != nodes.size()) [[unlikely]] {
-    throw std::runtime_error("Cycle detected in module graph");
-  }
-  
-  return result;
+
+    for (const auto& [source, destination] : edges) {
+        adjacency[source].push_back(destination);
+        in_degree[destination]++;
+    }
+
+    // Collect zero in-degree nodes and sort for deterministic (lexicographic) tie-breaking
+    std::vector<std::string> queue;
+    for (const auto& [node, degree] : in_degree) {
+        if (degree == 0) {
+            queue.push_back(node);
+        }
+    }
+    std::sort(queue.begin(), queue.end());
+
+    std::vector<std::string> result;
+    result.reserve(nodes.size());
+
+    // Kahn's algorithm: always pick lexicographically smallest ready node
+    while (!queue.empty()) {
+        auto current = std::move(queue.front());
+        queue.erase(queue.begin());
+        result.push_back(current);
+
+        std::vector<std::string> newly_ready;
+        for (const auto& neighbor : adjacency[current]) {
+            in_degree[neighbor]--;
+            if (in_degree[neighbor] == 0) {
+                newly_ready.push_back(neighbor);
+            }
+        }
+
+        if (!newly_ready.empty()) {
+            std::sort(newly_ready.begin(), newly_ready.end());
+            for (auto& n : newly_ready) {
+                auto pos = std::lower_bound(queue.begin(), queue.end(), n);
+                queue.insert(pos, std::move(n));
+            }
+        }
+    }
+
+    if (result.size() != nodes.size()) [[unlikely]] {
+        return std::unexpected(Error{
+            ErrorCode::CycleDetected,
+            "Cycle detected in module graph",
+        });
+    }
+
+    return result;
 }
 
 } // namespace gef

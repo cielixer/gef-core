@@ -1,12 +1,12 @@
 #include <gef/module.hpp>
 
 void execute(gef::Context& ctx) {
-    auto& lhs   = ctx.input<int>("lhs");
-    auto& rhs   = ctx.input<int>("rhs");
-    auto& quotient = ctx.output<int>("quotient");
-    auto& remainder = ctx.output<int>("remainder");
+    auto& lhs       = gef::ctxInput<int>(ctx, "lhs");
+    auto& rhs       = gef::ctxInput<int>(ctx, "rhs");
+    auto& quotient  = gef::ctxOutput<int>(ctx, "quotient");
+    auto& remainder = gef::ctxOutput<int>(ctx, "remainder");
 
-    quotient = lhs / rhs;
+    quotient  = lhs / rhs;
     remainder = lhs % rhs;
 }
 

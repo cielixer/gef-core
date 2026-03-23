@@ -8,7 +8,7 @@
 #include <gef/core/module/ModuleVariant.h>
 #include <stdexcept>
 #include "TestModulePath.h"
-#include "../src/gef/core/module/AtomicModuleInternal.h"
+#include "../src/gef/core/module/AtomicModule.hpp"
 
 namespace fs = std::filesystem;
 
@@ -60,9 +60,9 @@ TEST_CASE("AtomicModuleRegistry can execute example_add module", "[module][execu
     int b_value      = 3;
     int result_value = 0;
 
-    ctx.set_binding("lhs", std::any(&a_value));
-    ctx.set_binding("rhs", std::any(&b_value));
-    ctx.set_binding("result", std::any(&result_value));
+    gef::setBinding(ctx, "lhs", std::any(&a_value));
+    gef::setBinding(ctx, "rhs", std::any(&b_value));
+    gef::setBinding(ctx, "result", std::any(&result_value));
 
     gef::executeAtomicModule(**atomic, ctx);
 
@@ -88,7 +88,7 @@ TEST_CASE("System loads and executes example_add end-to-end", "[system][execute]
     gef::System system;
     auto module_path = getModulePath("example_add");
 
-    auto id = system.loadModule(module_path);
+    auto id = gef::loadModule(system, module_path);
     REQUIRE(id.has_value());
 
     gef::Context ctx;
@@ -97,11 +97,11 @@ TEST_CASE("System loads and executes example_add end-to-end", "[system][execute]
     int b_value      = 20;
     int result_value = 0;
 
-    ctx.set_binding("lhs", std::any(&a_value));
-    ctx.set_binding("rhs", std::any(&b_value));
-    ctx.set_binding("result", std::any(&result_value));
+    gef::setBinding(ctx, "lhs", std::any(&a_value));
+    gef::setBinding(ctx, "rhs", std::any(&b_value));
+    gef::setBinding(ctx, "result", std::any(&result_value));
 
-    auto exec_result = system.executeModule("example_add", ctx);
+    auto exec_result = gef::executeModule(system, "example_add", ctx);
     REQUIRE(exec_result.has_value());
 
     REQUIRE(result_value == 30);
@@ -111,26 +111,26 @@ TEST_CASE("System hot-reloads existing module without duplicate registration", "
     gef::System system;
     auto module_path = getModulePath("example_add");
 
-    auto first_id = system.loadModule(module_path);
+    auto first_id = gef::loadModule(system, module_path);
     REQUIRE(first_id.has_value());
 
-    auto second_id = system.loadModule(module_path);
+    auto second_id = gef::loadModule(system, module_path);
     REQUIRE(second_id.has_value());
 
     REQUIRE(*first_id == *second_id);
-    REQUIRE(system.moduleRegistry().size() == 1);
-    REQUIRE(gef::atomicModuleNames(system.moduleRegistry()).size() == 1);
+    REQUIRE(gef::registrySize(system.module_registry) == 1);
+    REQUIRE(gef::atomicModuleNames(system.module_registry).size() == 1);
 
     gef::Context ctx;
     int a_value = 8;
     int b_value = 13;
     int result_value = 0;
 
-    ctx.set_binding("lhs", std::any(&a_value));
-    ctx.set_binding("rhs", std::any(&b_value));
-    ctx.set_binding("result", std::any(&result_value));
+    gef::setBinding(ctx, "lhs", std::any(&a_value));
+    gef::setBinding(ctx, "rhs", std::any(&b_value));
+    gef::setBinding(ctx, "result", std::any(&result_value));
 
-    auto exec_result = system.executeModule(*second_id, ctx);
+    auto exec_result = gef::executeModule(system, *second_id, ctx);
     REQUIRE(exec_result.has_value());
     REQUIRE(result_value == 21);
 }
@@ -138,7 +138,7 @@ TEST_CASE("System hot-reloads existing module without duplicate registration", "
 TEST_CASE("System handles missing modules gracefully", "[module][error]") {
     gef::System system;
 
-    auto result = system.loadModule(getModulePath("nonexistent"));
+    auto result = gef::loadModule(system, getModulePath("nonexistent"));
     REQUIRE_FALSE(result.has_value());
     REQUIRE(result.error().code == gef::ErrorCode::FileNotFound);
 }
@@ -155,7 +155,7 @@ TEST_CASE("System executeModule by ModuleId works", "[system][execute]") {
     gef::System system;
     auto module_path = getModulePath("example_add");
 
-    auto id = system.loadModule(module_path);
+    auto id = gef::loadModule(system, module_path);
     REQUIRE(id.has_value());
 
     gef::Context ctx;
@@ -164,11 +164,11 @@ TEST_CASE("System executeModule by ModuleId works", "[system][execute]") {
     int b_value      = 7;
     int result_value = 0;
 
-    ctx.set_binding("lhs", std::any(&a_value));
-    ctx.set_binding("rhs", std::any(&b_value));
-    ctx.set_binding("result", std::any(&result_value));
+    gef::setBinding(ctx, "lhs", std::any(&a_value));
+    gef::setBinding(ctx, "rhs", std::any(&b_value));
+    gef::setBinding(ctx, "result", std::any(&result_value));
 
-    auto exec_result = system.executeModule(*id, ctx);
+    auto exec_result = gef::executeModule(system, *id, ctx);
     REQUIRE(exec_result.has_value());
 
     REQUIRE(result_value == 12);
@@ -178,10 +178,10 @@ TEST_CASE("ModuleRegistry stores ModuleDef with correct signature", "[registry]"
     gef::System system;
     auto module_path = getModulePath("example_add");
 
-    auto id = system.loadModule(module_path);
+    auto id = gef::loadModule(system, module_path);
     REQUIRE(id.has_value());
 
-    auto def = system.moduleRegistry().get(*id);
+    auto def = gef::registryGet(system.module_registry, *id);
     REQUIRE(def.has_value());
     REQUIRE((*def)->name == "example_add");
     REQUIRE((*def)->signature.version == "0.1.0");
@@ -210,14 +210,14 @@ TEST_CASE("System executeModule rejects empty module name", "[system][error]") {
     gef::System system;
     gef::Context ctx;
 
-    REQUIRE_THROWS_AS((void)system.executeModule("", ctx), std::invalid_argument);
+    REQUIRE_THROWS_AS((void)gef::executeModule(system, "", ctx), std::invalid_argument);
 }
 
 TEST_CASE("System executeModule by id returns error for unknown id", "[system][error]") {
     gef::System system;
     gef::Context ctx;
 
-    auto result = system.executeModule(static_cast<gef::ModuleId>(12345), ctx);
+    auto result = gef::executeModule(system, static_cast<gef::ModuleId>(12345), ctx);
     REQUIRE_FALSE(result.has_value());
     REQUIRE(result.error().code == gef::ErrorCode::ModuleNotFound);
 }
@@ -226,22 +226,20 @@ TEST_CASE("System executeModule by name returns error for unknown module", "[sys
     gef::System system;
     gef::Context ctx;
 
-    auto result = system.executeModule("missing.module", ctx);
+    auto result = gef::executeModule(system, "missing.module", ctx);
     REQUIRE_FALSE(result.has_value());
     REQUIRE(result.error().code == gef::ErrorCode::ModuleNotFound);
 }
 
 TEST_CASE("System executeModule handles non-atomic variants", "[system][variant]") {
     gef::System system;
-    auto& registry = system.moduleRegistry();
-
-    auto flow_id = registry.add(gef::ModuleDef{
+    auto flow_id = gef::registryAdd(system.module_registry, gef::ModuleDef{
         .name = "flow.placeholder",
         .signature = gef::ModuleSignature{"0.1.0", {}},
         .variant = gef::FlowModule{{}, {}},
     });
 
-    auto pipeline_id = registry.add(gef::ModuleDef{
+    auto pipeline_id = gef::registryAdd(system.module_registry, gef::ModuleDef{
         .name = "pipeline.placeholder",
         .signature = gef::ModuleSignature{"0.1.0", {}},
         .variant = gef::PipelineModule{{}},
@@ -249,25 +247,25 @@ TEST_CASE("System executeModule handles non-atomic variants", "[system][variant]
 
     gef::Context ctx;
 
-    auto flow_result = system.executeModule(flow_id, ctx);
+    auto flow_result = gef::executeModule(system, flow_id, ctx);
     REQUIRE(flow_result.has_value());
 
-    auto pipeline_result = system.executeModule(pipeline_id, ctx);
+    auto pipeline_result = gef::executeModule(system, pipeline_id, ctx);
     REQUIRE(pipeline_result.has_value());
 }
 
 TEST_CASE("ModuleRegistry add/find/get success path", "[registry]") {
     gef::ModuleRegistry registry;
 
-    auto id = registry.add(makeAtomicModuleDef("unit.example"));
+    auto id = gef::registryAdd(registry, makeAtomicModuleDef("unit.example"));
     REQUIRE(id == 0);
-    REQUIRE(registry.size() == 1);
+    REQUIRE(gef::registrySize(registry) == 1);
 
-    auto found_id = registry.find("unit.example");
+    auto found_id = gef::registryFind(registry, "unit.example");
     REQUIRE(found_id.has_value());
     REQUIRE(*found_id == id);
 
-    auto def = registry.get(id);
+    auto def = gef::registryGet(registry, id);
     REQUIRE(def.has_value());
     REQUIRE((*def)->name == "unit.example");
     REQUIRE((*def)->signature.version == "0.1.0");
@@ -276,22 +274,22 @@ TEST_CASE("ModuleRegistry add/find/get success path", "[registry]") {
 TEST_CASE("ModuleRegistry validates add inputs", "[registry][error]") {
     gef::ModuleRegistry registry;
 
-    REQUIRE_THROWS_AS(registry.add(makeAtomicModuleDef("")), std::invalid_argument);
+    REQUIRE_THROWS_AS(gef::registryAdd(registry, makeAtomicModuleDef("")), std::invalid_argument);
 
-    auto first_id = registry.add(makeAtomicModuleDef("duplicate.name"));
+    auto first_id = gef::registryAdd(registry, makeAtomicModuleDef("duplicate.name"));
     REQUIRE(first_id == 0);
-    REQUIRE_THROWS_AS(registry.add(makeAtomicModuleDef("duplicate.name")),
+    REQUIRE_THROWS_AS(gef::registryAdd(registry, makeAtomicModuleDef("duplicate.name")),
                       std::invalid_argument);
 }
 
 TEST_CASE("ModuleRegistry reports missing entries", "[registry][error]") {
     gef::ModuleRegistry registry;
 
-    auto missing_id = registry.find("missing.module");
+    auto missing_id = gef::registryFind(registry, "missing.module");
     REQUIRE_FALSE(missing_id.has_value());
     REQUIRE(missing_id.error().code == gef::ErrorCode::ModuleNotFound);
 
-    auto missing_def = registry.get(static_cast<gef::ModuleId>(0));
+    auto missing_def = gef::registryGet(registry, static_cast<gef::ModuleId>(0));
     REQUIRE_FALSE(missing_def.has_value());
     REQUIRE(missing_def.error().code == gef::ErrorCode::ModuleNotFound);
 }
@@ -304,32 +302,32 @@ TEST_CASE("Context typed accessors expose mutable and const references", "[conte
     int inout_value = 10;
     int config_value = 99;
 
-    ctx.set_binding("in", std::any(&input_value));
-    ctx.set_binding("out", std::any(&output_value));
-    ctx.set_binding("io", std::any(&inout_value));
-    ctx.set_binding("cfg", std::any(&config_value));
+    gef::setBinding(ctx, "in", std::any(&input_value));
+    gef::setBinding(ctx, "out", std::any(&output_value));
+    gef::setBinding(ctx, "io", std::any(&inout_value));
+    gef::setBinding(ctx, "cfg", std::any(&config_value));
 
-    REQUIRE(ctx.input<int>("in") == 4);
+    REQUIRE(gef::ctxInput<int>(ctx, "in") == 4);
 
-    auto& out_ref = ctx.output<int>("out");
+    auto& out_ref = gef::ctxOutput<int>(ctx, "out");
     out_ref = 12;
     REQUIRE(output_value == 12);
 
-    auto& inout_ref = ctx.inout<int>("io");
+    auto& inout_ref = gef::ctxInout<int>(ctx, "io");
     inout_ref += 5;
     REQUIRE(inout_value == 15);
 
-    REQUIRE(ctx.config<int>("cfg") == 99);
+    REQUIRE(gef::ctxConfig<int>(ctx, "cfg") == 99);
 }
 
 TEST_CASE("Context throws bad_any_cast for missing or mismatched bindings", "[context][error]") {
     gef::Context ctx;
 
-    REQUIRE_THROWS_AS(ctx.input<int>("missing"), std::bad_any_cast);
+    REQUIRE_THROWS_AS(gef::ctxInput<int>(ctx, "missing"), std::bad_any_cast);
 
     float value = 3.5f;
-    ctx.set_binding("number", std::any(&value));
-    REQUIRE_THROWS_AS(ctx.input<int>("number"), std::bad_any_cast);
+    gef::setBinding(ctx, "number", std::any(&value));
+    REQUIRE_THROWS_AS(gef::ctxInput<int>(ctx, "number"), std::bad_any_cast);
 }
 
 TEST_CASE("Module path helper resolves existing built module", "[module][path]") {
@@ -375,22 +373,22 @@ TEST_CASE("System handles concurrent module loading safely", "[system][thread]")
      
      for (int i = 0; i < 2; ++i) {
           threads.emplace_back([&]() {
-               auto id = system.loadModule(module_path);
-               if (id.has_value()) {
-                    std::lock_guard<std::mutex> lock(ids_mutex);
-                    loaded_ids.push_back(*id);
-               }
-          });
-     }
-     
-     for (auto& t : threads) {
-          t.join();
-     }
-     
-     REQUIRE(loaded_ids.size() == 2);
-      REQUIRE(loaded_ids[0] == loaded_ids[1]);
-      REQUIRE(system.moduleRegistry().size() == 1);
-      REQUIRE(gef::atomicModuleNames(system.moduleRegistry()).size() == 1);
+                auto id = gef::loadModule(system, module_path);
+                if (id.has_value()) {
+                     std::lock_guard<std::mutex> lock(ids_mutex);
+                     loaded_ids.push_back(*id);
+                }
+           });
+      }
+      
+      for (auto& t : threads) {
+           t.join();
+      }
+      
+      REQUIRE(loaded_ids.size() == 2);
+       REQUIRE(loaded_ids[0] == loaded_ids[1]);
+       REQUIRE(gef::registrySize(system.module_registry) == 1);
+       REQUIRE(gef::atomicModuleNames(system.module_registry).size() == 1);
 }
 
 TEST_CASE("AtomicModule remains move-only and placeholder-safe", "[module][traits]") {
